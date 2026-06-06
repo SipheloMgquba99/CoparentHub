@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="CoparentHub.Api/CoparentHub.Api.csproj" />
+  <Project Path="CoparentHub.Application/CoparentHub.Application.csproj" />
+  <Project Path="CoparentHub.Domain/CoparentHub.Domain.csproj" />
+  <Project Path="CoparentHub.Infrastructure/CoparentHub.Infrastructure.csproj" />
+  <Project Path="CoparentHub.Persistence/CoparentHub.Persistence.csproj" />
+</Solution>
