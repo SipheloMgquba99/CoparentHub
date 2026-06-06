@@ -1,0 +1,40 @@
+# =========================
+# .NET / Visual Studio
+# =========================
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.log
+
+# appsettings (IMPORTANT)
+appsettings*.json
+!appsettings.Development.json
+
+# =========================
+# Node / React / Frontend
+# =========================
+node_modules/
+dist/
+build/
+.vite/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.local
+.env.*.local
