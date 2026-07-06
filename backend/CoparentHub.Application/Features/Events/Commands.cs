@@ -27,6 +27,6 @@ namespace CoparentHub.Application.Features.Events
 
     public record CancelEventCommand(Guid EventId, Guid UserId) : IRequest<Result<Guid>>;
 
-    public record RsvpCommand(Guid EventId, Guid UserId, AttendanceStatus Status)
+    public record RsvpCommand(Guid EventId, Guid UserId, AttendanceStatus Status, string? Reason)
         : IRequest<Result<Guid>>;
 }

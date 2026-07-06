@@ -19,7 +19,12 @@ export interface Family {
 
 export interface CreateFamilyRequest {
   name: string;
- userId?: string; 
+ userId?: string;
+}
+
+export interface FamilyInvite {
+  code: string;
+  expiresAt: string;
 }
 
 export interface AddChildRequest {

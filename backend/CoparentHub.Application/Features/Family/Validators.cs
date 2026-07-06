@@ -21,4 +21,14 @@ namespace CoparentHub.Application.Features.Family
                 .MaximumLength(100);
         }
     }
+
+    public class JoinFamilyByCodeValidator : AbstractValidator<JoinFamilyByCodeCommand>
+    {
+        public JoinFamilyByCodeValidator()
+        {
+            RuleFor(x => x.Code)
+                .NotEmpty()
+                .Length(8);
+        }
+    }
 }

@@ -19,5 +19,6 @@ export interface UpdateEventRequest {
 
 export interface RsvpRequest {
   status: AttendanceStatus;
+  reason?: string | null;
 }
 

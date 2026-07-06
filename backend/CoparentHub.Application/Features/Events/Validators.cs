@@ -33,4 +33,18 @@ namespace CoparentHub.Application.Features.Events
                 .When(x => x.EndsAt.HasValue);
         }
     }
+
+    public class RsvpValidator : AbstractValidator<RsvpCommand>
+    {
+        public RsvpValidator()
+        {
+            RuleFor(x => x.Reason)
+                .NotEmpty()
+                .WithMessage("A reason is required when declining.")
+                .When(x => x.Status == Domain.Entities.AttendanceStatus.Declined);
+
+            RuleFor(x => x.Reason)
+                .MaximumLength(200);
+        }
+    }
 }

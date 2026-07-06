@@ -3,6 +3,7 @@ using CoparentHub.Application;
 using CoparentHub.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -14,6 +15,15 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Render/Heroku/Railway-style hosts assign a port at runtime via $PORT and expect the app to
+// bind to it; local dev/docker-compose set ASPNETCORE_URLS explicitly instead, so PORT is
+// simply absent there and this is a no-op.
+var hostPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(hostPort))
+{
+    builder.WebHost.UseUrls($"http://+:{hostPort}");
+}
 
 builder.Host.UseSerilog((context, configuration) =>
 {
@@ -199,6 +209,19 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
     o.MultipartBodyLengthLimit = 5 * 1024 * 1024;
 });
 
+// Most PaaS hosts (Fly.io, Render, Railway, etc.) terminate TLS at their edge and forward
+// plain HTTP to the container, so ASP.NET Core needs to trust their X-Forwarded-* headers to
+// know the original request was HTTPS — otherwise UseHttpsRedirection/UseHsts below can loop.
+// KnownNetworks/KnownProxies are cleared because the proxy's IP isn't fixed/known in advance
+// on these platforms; this is the standard pattern for a containerized app behind a cloud
+// provider's edge, not an open relay (only that provider's network can reach the container).
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownIPNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSwaggerGen(c =>
@@ -219,23 +242,33 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 app.UseSerilogRequestLogging();
 
 app.UseExceptionHandler(_ => { });
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    using var migrationScope = app.Services.CreateScope();
-    migrationScope.ServiceProvider
-        .GetRequiredService<CoparentHub.Persistence.Data.AppDbContext>()
-        .Database.Migrate();
 }
 else
 {
     app.UseHsts();
+}
+
+// Applying migrations on startup is normally risky with multiple instances racing on the same
+// migration, but this app only ever runs as a single instance (free-tier hosting doesn't
+// support horizontal scaling anyway), so that risk doesn't apply — and it means there's no
+// separate manual migration step to remember when deploying.
+using (var migrationScope = app.Services.CreateScope())
+{
+    migrationScope.ServiceProvider
+        .GetRequiredService<CoparentHub.Persistence.Data.AppDbContext>()
+        .Database.Migrate();
 }
 
 app.UseHttpsRedirection();

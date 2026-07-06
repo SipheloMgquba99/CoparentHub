@@ -1,10 +1,19 @@
-import { useState, useEffect, type FC } from "react";
+import { useState, useEffect, useRef, type FC } from "react";
 import type { User, Family, ScheduledEvent } from "../../types";
 import * as api from "../../api";
 import { EventRow, EventSheet } from "../../components/events";
 import { Ico, Icons } from "../../components/icons";
 import { PageSpinner } from "../../components/ui";
 import { calcAge, toLocalDateString } from "../../lib/utils";
+
+const HOME_POLL_MS = 20_000;
+
+const getGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+};
 
 interface HomePageProps {
   user: User;
@@ -18,6 +27,8 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
   const [evs, setEvs] = useState<ScheduledEvent[]>([]);
   const [busy, setBusy] = useState<boolean>(true);
   const [sheet, setSheet] = useState<boolean>(false);
+  const [tick, setTick] = useState<number>(0);
+  const silentRef = useRef(false);
 
   const today = toLocalDateString(new Date());
 
@@ -28,7 +39,7 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
       return;
     }
 
-    setBusy(true);
+    if (!silentRef.current) setBusy(true);
 
     const from = new Date().toISOString();
     const toDate = new Date();
@@ -46,8 +57,20 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
         )
       )
       .catch(() => setEvs([]))
-      .finally(() => setBusy(false));
-  }, [family?.id, refresh]);
+      .finally(() => {
+        setBusy(false);
+        silentRef.current = false;
+      });
+  }, [family?.id, refresh, tick]);
+
+  useEffect(() => {
+    if (!family) return;
+    const id = setInterval(() => {
+      silentRef.current = true;
+      setTick(t => t + 1);
+    }, HOME_POLL_MS);
+    return () => clearInterval(id);
+  }, [family?.id]);
 
   const fn = user.fullName.split(" ")[0] ?? "there";
   const day = new Date().toLocaleDateString("en-US", { weekday: "long" });
@@ -58,7 +81,7 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
     <>
       <div className="greet">
         <div className="gname">
-          Good morning,<br />
+          {getGreeting()},<br />
           <em>{fn}</em> 👋
         </div>
         <div className="gdate">{day}, {date}</div>

@@ -12,4 +12,9 @@ namespace CoparentHub.Application.Features.Family
     public record GetMyFamiliesQuery(
         Guid UserId
     ) : IRequest<Result<List<FamilyDto>>>;
+
+    public record GetActiveFamilyInviteQuery(
+        Guid FamilyId,
+        Guid UserId
+    ) : IRequest<Result<FamilyInviteDto?>>;
 }

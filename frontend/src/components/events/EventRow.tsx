@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useState, type FC, type FormEvent } from "react";
 import type { ScheduledEvent, AttendanceStatus } from "../../types";
 import { Ico, Icons } from '../icons';
 import { fmtD, fmtT, RSVP_STATUSES, RSVP_CODE } from '../../lib/utils';
@@ -8,17 +8,35 @@ interface EventRowProps {
   userId: string;
   onEdit?:   (ev: ScheduledEvent) => void;
   onCancel?: (id: string) => void;
-  onRsvp?:   (id: string, status: AttendanceStatus) => void;
+  onRsvp?:   (id: string, status: AttendanceStatus, reason?: string) => void;
   compact?: boolean;
 }
 
 export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRsvp, compact }) => {
+  const [declining, setDeclining] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+
   const tc  = (ev.type ?? "Other").toLowerCase();
   const my  = ev.attendances.find(a => a.userId === userId);
   const oth = ev.attendances.filter(a => a.userId !== userId);
 
   const needsResponse = !my || my.status === "Tentative";
   const showRsvp = onRsvp && !ev.isCancelled && (compact ? needsResponse : true);
+
+  const handleRsvpClick = (status: AttendanceStatus) => {
+    if (status === "Declined") {
+      setDeclineReason("");
+      setDeclining(true);
+      return;
+    }
+    onRsvp!(ev.id, status);
+  };
+
+  const submitDecline = (e: FormEvent) => {
+    e.preventDefault();
+    onRsvp!(ev.id, "Declined", declineReason.trim());
+    setDeclining(false);
+  };
 
   return (
     <div className={`ei ${ev.isCancelled ? "ecanc" : ""}`}>
@@ -68,6 +86,7 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
             {oth.map(a => (
               <span key={a.userId} className={`ac ac${RSVP_CODE[a.status]}`}>
                 {a.status === "Accepted" ? "✓" : a.status === "Declined" ? "✗" : "~"}&nbsp;Co-parent
+                {a.status === "Declined" && a.reason && `: ${a.reason}`}
               </span>
             ))}
           </div>
@@ -86,7 +105,7 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
                 type="button"
                 key={s}
                 className={`rb ${my?.status === s ? `r${RSVP_CODE[s]}` : ""}`}
-                onClick={() => onRsvp!(ev.id, s)}
+                onClick={() => handleRsvpClick(s)}
               >
                 {s}
               </button>
@@ -107,6 +126,33 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
               <Ico d={Icons.x} size={14} />
             </button>
           )}
+        </div>
+      )}
+
+      {declining && (
+        <div className="ov" onClick={e => e.target === e.currentTarget && setDeclining(false)}>
+          <div className="sh">
+            <div className="shdrag" />
+            <div className="shhead">
+              <div className="shtitle">Why are you declining?</div>
+              <button type="button" className="shclose" onClick={() => setDeclining(false)} aria-label="Close">
+                <Ico d={Icons.x} size={15} />
+              </button>
+            </div>
+            <form onSubmit={submitDecline}>
+              <div className="f">
+                <label>Reason</label>
+                <input
+                  value={declineReason}
+                  onChange={e => setDeclineReason(e.target.value)}
+                  placeholder={`e.g. I have a scheduling conflict with "${ev.title}"`}
+                  maxLength={200}
+                  required autoFocus
+                />
+              </div>
+              <button className="btn btn-p" type="submit">Decline Event</button>
+            </form>
+          </div>
         </div>
       )}
     </div>

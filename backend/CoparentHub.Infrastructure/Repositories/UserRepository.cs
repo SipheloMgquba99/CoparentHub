@@ -7,10 +7,13 @@ namespace CoparentHub.Infrastructure.Repositories
 {
     public class UserRepository(AppDbContext db) : IUserRepository
     {
+        // AsNoTracking is safe here: nothing in the app mutates a User after RegisterHandler
+        // creates it (no profile-edit feature exists), so these reads never need to be tracked
+        // for a later SaveChanges, and detached instances are safe to cache across requests.
         public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-            db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+            db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, ct);
         public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
-            db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower(), ct);
+            db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email.ToLower(), ct);
         public Task<bool> ExistsAsync(string email, CancellationToken ct = default) =>
             db.Users.AnyAsync(u => u.Email == email.ToLower(), ct);
         public void Add(User user) => db.Users.Add(user);
@@ -90,18 +93,34 @@ namespace CoparentHub.Infrastructure.Repositories
         public void Add(Notification notification) => db.Notifications.Add(notification);
     }
 
+    public class FamilyInviteRepository(AppDbContext db) : IFamilyInviteRepository
+    {
+        public Task<FamilyInvite?> GetActiveByFamilyIdAsync(Guid familyId, CancellationToken ct = default) =>
+            db.FamilyInvites
+                .Where(i => i.FamilyId == familyId && !i.Used && i.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(i => i.ExpiresAt)
+                .FirstOrDefaultAsync(ct);
+
+        public Task<FamilyInvite?> GetByCodeAsync(string code, CancellationToken ct = default) =>
+            db.FamilyInvites.FirstOrDefaultAsync(i => i.Code == code, ct);
+
+        public void Add(FamilyInvite invite) => db.FamilyInvites.Add(invite);
+    }
+
     public class UnitOfWork(
         AppDbContext db,
         IUserRepository users,
         IFamilyRepository families,
         IEventRepository events,
-        INotificationRepository notifications)
+        INotificationRepository notifications,
+        IFamilyInviteRepository invites)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
         public IFamilyRepository Families { get; } = families;
         public IEventRepository Events { get; } = events;
         public INotificationRepository Notifications { get; } = notifications;
+        public IFamilyInviteRepository Invites { get; } = invites;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
     }
 }

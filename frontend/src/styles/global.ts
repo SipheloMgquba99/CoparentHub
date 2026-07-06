@@ -157,7 +157,9 @@ html, body {
   font-family: 'Outfit', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
+button, [role="button"] { touch-action: manipulation; }
 #root { height: 100%; display: flex; justify-content: center; align-items: stretch; }
 
 .app {
@@ -170,7 +172,7 @@ html, body {
 }
 
 /* ── THEME TOGGLE BUTTON ── */
-.topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.topbar-right { position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .theme-btn {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 32px; height: 32px; border-radius: 50%;
@@ -178,6 +180,7 @@ html, body {
   cursor: pointer; transition: all .2s; font-size: 15px;
 }
 .theme-btn:hover { background: rgba(255,255,255,.2); transform: rotate(20deg); }
+.theme-btn:active { transform: scale(.9); }
 
 /* ── AUTH ── */
 .ascreen { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg); }
@@ -219,7 +222,7 @@ html, body {
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; row-gap: 10px;
-  padding: 14px 16px 12px;
+  padding: calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
   background: var(--topbar-bg);
   flex-shrink: 0;
   transition: background .25s;
@@ -234,20 +237,23 @@ html, body {
   cursor: pointer; transition: all .2s; letter-spacing: .5px;
 }
 .tav:hover { background: rgba(255,255,255,.2); border-color: var(--gold); }
+.tav:active { transform: scale(.92); }
 .page { flex: 1; overflow-y: auto; padding: 20px 16px 96px; transition: background .25s; }
 .nav {
   position: absolute; bottom: 0; left: 0; right: 0;
   display: flex; background: var(--nav-bg);
-  padding: 8px 4px 22px; z-index: 10;
+  padding: 8px calc(4px + env(safe-area-inset-right)) calc(22px + env(safe-area-inset-bottom)) calc(4px + env(safe-area-inset-left));
+  z-index: 10;
   border-top: 1px solid rgba(255,255,255,.06);
   transition: background .25s;
 }
 .ni {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
   padding: 6px 4px; cursor: pointer; color: var(--nav-text);
-  transition: color .2s; border: none; background: none; font-family: 'Outfit', sans-serif;
+  transition: color .2s, transform .12s; border: none; background: none; font-family: 'Outfit', sans-serif;
 }
 .ni.on { color: var(--nav-active); }
+.ni:active { transform: scale(.92); }
 .ni span { font-size: 10px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
 
 /* ── CARDS ── */
@@ -314,9 +320,9 @@ html, body {
   font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif;
   cursor: pointer; transition: all .18s; border: none; width: 100%; letter-spacing: .1px;
 }
+.btn:active:not(:disabled) { transform: scale(.97); }
 .btn-p { background: var(--btn-p-bg); color: var(--btn-p-text); }
 .btn-p:hover { filter: brightness(1.12); }
-.btn-p:active { transform: scale(.98); }
 .btn-gold { background: var(--gold); color: #0d1b36; font-weight: 700; }
 .btn-o { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
 .btn-o:hover { background: var(--surface-2); border-color: var(--border-mid); }
@@ -365,6 +371,7 @@ html, body {
   cursor: pointer; font-family: 'Outfit', sans-serif; transition: all .15s; color: var(--muted);
 }
 .rb:hover { border-color: var(--border-mid); color: var(--text-2); }
+.rb:active { transform: scale(.95); }
 .rb.rA { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 .rb.rD { background: var(--danger-bg);  border-color: var(--danger);  color: var(--danger); }
 .rb.rT { background: var(--gold-bg);    border-color: var(--gold);    color: var(--gold); }
@@ -419,8 +426,10 @@ html, body {
 .myfam-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: opacity .12s;
 }
 .myfam-row:last-child { border-bottom: none; }
+.myfam-row:active { opacity: .6; }
 .myfam-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -.1px; }
 .myfam-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .myfam-badge { font-size: 11px; color: var(--accent); font-weight: 700; background: var(--accent-dim); padding: 3px 10px; border-radius: 20px; }
@@ -432,7 +441,10 @@ html, body {
   margin-bottom: 12px; box-shadow: var(--shadow);
 }
 .fidlbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.4); margin-bottom: 5px; font-weight: 600; }
-.fidval { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: var(--gold); font-weight: 600; letter-spacing: .5px; }
+.fidval { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 20px; color: var(--gold); font-weight: 700; letter-spacing: 3px; }
+.fidexp { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 4px; }
+.fidbtns { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.fidfull { font-size: 13px; color: rgba(255,255,255,.85); line-height: 1.4; }
 
 /* ── BOTTOM SHEET ── */
 .ov {
@@ -467,6 +479,7 @@ html, body {
   cursor: pointer; font-family: 'Outfit', sans-serif; color: var(--text-2); transition: all .15s;
 }
 .chip:hover { border-color: var(--border-mid); color: var(--text); }
+.chip:active { transform: scale(.96); }
 .chip.on { background: var(--btn-p-bg); border-color: var(--btn-p-bg); color: var(--btn-p-text); font-weight: 600; }
 
 /* ── SPINNER ── */
@@ -488,7 +501,7 @@ html, body {
 }
 
 /* ── FAMILY SWITCHER ── */
-.fswitch-wrap { position: relative; }
+.fswitch-wrap { display: contents; }
 .fswitch-btn {
   display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0;
   height: 32px; padding: 0 12px; border-radius: 16px;
@@ -501,7 +514,7 @@ html, body {
 .fswitch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fswitch-menu {
   position: absolute; top: calc(100% + 10px); right: 0;
-  width: 220px; max-height: 320px; overflow-y: auto;
+  width: 220px; max-width: calc(100vw - 32px); max-height: 320px; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r); box-shadow: var(--shadow-lg);
   z-index: 50; padding: 8px;
@@ -512,13 +525,15 @@ html, body {
   padding: 10px 10px; border-radius: 10px; border: none;
   background: transparent; cursor: pointer; margin-bottom: 2px;
   font-size: 13.5px; color: var(--text); font-family: 'Outfit', sans-serif;
+  transition: background .12s;
 }
 .fswitch-item:hover { background: var(--surface-2); }
+.fswitch-item:active { background: var(--surface-2); }
 .fswitch-item.active { color: var(--accent); font-weight: 600; }
 .fswitch-add { color: var(--accent); font-weight: 600; }
 
 /* ── NOTIFICATIONS ── */
-.nbell-wrap { position: relative; }
+.nbell-wrap { display: contents; }
 .nbell-btn { position: relative; }
 .nbell-badge {
   position: absolute; top: 2px; right: 2px;
@@ -530,7 +545,7 @@ html, body {
 }
 .nbell-menu {
   position: absolute; top: calc(100% + 10px); right: 0;
-  width: 300px; max-height: 360px; overflow-y: auto;
+  width: 300px; max-width: calc(100vw - 32px); max-height: 360px; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r); box-shadow: var(--shadow-lg);
   z-index: 50; padding: 8px;
@@ -544,8 +559,10 @@ html, body {
   display: block; width: 100%; text-align: left;
   padding: 10px 8px; border-radius: 10px; border: none;
   background: transparent; cursor: default; margin-bottom: 2px;
+  transition: background .12s;
 }
 .nbell-item.unread { background: var(--surface-2); cursor: pointer; }
+.nbell-item.unread:active { background: var(--border); }
 .nbell-row { display: flex; gap: 8px; align-items: flex-start; }
 .nbell-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0; }
 .nbell-col { flex: 1; }

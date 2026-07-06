@@ -1,5 +1,6 @@
 import type {
   Family,
+  FamilyInvite,
   AddChildRequest,
   CreateFamilyRequest,
 } from "../types";
@@ -25,12 +26,28 @@ export function createFamily(req: CreateFamilyRequest): Promise<string> {
   return request<string>("POST", "/family", req);
 }
 
-export function joinFamily(familyId: string): Promise<string> {
+export function joinFamilyByCode(code: string): Promise<string> {
+  if (!code) {
+    return Promise.reject(new Error("Invite code is required"));
+  }
+
+  return request<string>("POST", "/family/join", { code: code.trim().toUpperCase() });
+}
+
+export function createFamilyInvite(familyId: string): Promise<FamilyInvite> {
   if (!familyId) {
     return Promise.reject(new Error("familyId is required"));
   }
 
-  return request<string>("POST", `/family/${familyId}/join`);
+  return request<FamilyInvite>("POST", `/family/${familyId}/invites`);
+}
+
+export function getActiveFamilyInvite(familyId: string): Promise<FamilyInvite | null> {
+  if (!familyId) {
+    return Promise.reject(new Error("familyId is required"));
+  }
+
+  return request<FamilyInvite | null>("GET", `/family/${familyId}/invites/active`);
 }
 
 export function addChild(

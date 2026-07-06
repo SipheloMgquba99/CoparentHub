@@ -70,7 +70,7 @@ namespace CoparentHub.Api.Controllers
             [FromBody] RsvpRequest req,
             CancellationToken ct)
             => ToResponse(await sender.Send(
-                new RsvpCommand(eventId, CurrentUserId, req.Status), ct));
+                new RsvpCommand(eventId, CurrentUserId, req.Status, req.Reason), ct));
     }
 
     public record CreateEventRequest(
@@ -88,5 +88,5 @@ namespace CoparentHub.Api.Controllers
         DateTime? EndsAt,
         string? Notes);
 
-    public record RsvpRequest(AttendanceStatus Status);
+    public record RsvpRequest(AttendanceStatus Status, string? Reason);
 }

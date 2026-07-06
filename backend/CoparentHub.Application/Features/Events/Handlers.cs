@@ -1,4 +1,5 @@
 ﻿using CoparentHub.Application.Features.DTOs;
+using CoparentHub.Application.Interfaces;
 using CoparentHub.Application.Interfaces.Repositories;
 using CoparentHub.Domain.Common;
 using CoparentHub.Domain.Entities;
@@ -6,7 +7,7 @@ using MediatR;
 
 namespace CoparentHub.Application.Features.Events
 {
-    public class CreateEventHandler(IUnitOfWork uow)
+    public class CreateEventHandler(IUnitOfWork uow, IEventCacheVersion cacheVersion)
     : IRequestHandler<CreateEventCommand, Result<Guid>>
     {
         public async Task<Result<Guid>> Handle(CreateEventCommand cmd, CancellationToken ct)
@@ -50,12 +51,13 @@ namespace CoparentHub.Application.Features.Events
             }
 
             await uow.SaveAsync(ct);
+            cacheVersion.Bump(cmd.FamilyId);
 
             return Result<Guid>.Ok(ev.Id);
         }
     }
 
-    public class UpdateEventHandler(IUnitOfWork uow)
+    public class UpdateEventHandler(IUnitOfWork uow, IEventCacheVersion cacheVersion)
         : IRequestHandler<UpdateEventCommand, Result<Guid>>
     {
         public async Task<Result<Guid>> Handle(UpdateEventCommand cmd, CancellationToken ct)
@@ -74,12 +76,13 @@ namespace CoparentHub.Application.Features.Events
                 return Result<Guid>.Fail(result.Error!);
 
             await uow.SaveAsync(ct);
+            cacheVersion.Bump(ev.FamilyId);
 
             return Result<Guid>.Ok(ev.Id);
         }
     }
 
-    public class CancelEventHandler(IUnitOfWork uow)
+    public class CancelEventHandler(IUnitOfWork uow, IEventCacheVersion cacheVersion)
         : IRequestHandler<CancelEventCommand, Result<Guid>>
     {
         public async Task<Result<Guid>> Handle(CancelEventCommand cmd, CancellationToken ct)
@@ -115,12 +118,13 @@ namespace CoparentHub.Application.Features.Events
             }
 
             await uow.SaveAsync(ct);
+            cacheVersion.Bump(ev.FamilyId);
 
             return Result<Guid>.Ok(ev.Id);
         }
     }
 
-    public class RsvpHandler(IUnitOfWork uow)
+    public class RsvpHandler(IUnitOfWork uow, IEventCacheVersion cacheVersion)
         : IRequestHandler<RsvpCommand, Result<Guid>>
     {
         public async Task<Result<Guid>> Handle(RsvpCommand cmd, CancellationToken ct)
@@ -130,7 +134,7 @@ namespace CoparentHub.Application.Features.Events
             if (ev is null)
                 return Result<Guid>.Fail("Event not found.");
 
-            var result = ev.Rsvp(cmd.UserId, cmd.Status);
+            var result = ev.Rsvp(cmd.UserId, cmd.Status, cmd.Reason);
 
             if (!result.IsSuccess)
                 return Result<Guid>.Fail(result.Error!);
@@ -140,15 +144,20 @@ namespace CoparentHub.Application.Features.Events
                 var responder = await uow.Users.GetByIdAsync(cmd.UserId, ct);
                 var responderName = responder?.FullName ?? "Someone";
 
+                var message = $"{responderName} marked \"{ev.Title}\" as {cmd.Status}.";
+                if (cmd.Status == AttendanceStatus.Declined && !string.IsNullOrWhiteSpace(cmd.Reason))
+                    message += $" Reason: {cmd.Reason.Trim()}";
+
                 uow.Notifications.Add(Notification.Create(
                     userId: ev.CreatedByUserId,
                     familyId: ev.FamilyId,
                     type: NotificationType.EventRsvp,
-                    message: $"{responderName} marked \"{ev.Title}\" as {cmd.Status}.",
+                    message: message,
                     eventId: ev.Id));
             }
 
             await uow.SaveAsync(ct);
+            cacheVersion.Bump(ev.FamilyId);
 
             return Result<Guid>.Ok(ev.Id);
         }
@@ -226,7 +235,7 @@ namespace CoparentHub.Application.Features.Events
                 e.IsCancelled,
                 e.CreatedByUserId,
                 e.Attendances
-                    .Select(a => new AttendanceDto(a.UserId, a.Status.ToString(), a.RespondedAt))
+                    .Select(a => new AttendanceDto(a.UserId, a.Status.ToString(), a.RespondedAt, a.Reason))
                     .ToList()
             );
     }

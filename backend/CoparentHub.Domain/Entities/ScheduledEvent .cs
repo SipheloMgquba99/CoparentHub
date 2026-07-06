@@ -11,6 +11,7 @@ namespace CoparentHub.Domain.Entities
         public Guid UserId { get; private set; }
         public AttendanceStatus Status { get; private set; }
         public DateTime? RespondedAt { get; private set; }
+        public string? Reason { get; private set; }
 
         private Attendance() { }
 
@@ -22,10 +23,11 @@ namespace CoparentHub.Domain.Entities
             RespondedAt = attending ? DateTime.UtcNow : null,
         };
 
-        internal void Update(AttendanceStatus status)
+        internal void Update(AttendanceStatus status, string? reason)
         {
             Status = status;
             RespondedAt = DateTime.UtcNow;
+            Reason = status == AttendanceStatus.Declined ? reason?.Trim() : null;
         }
     }
 
@@ -89,12 +91,14 @@ namespace CoparentHub.Domain.Entities
             return Result<ScheduledEvent>.Ok(this);
         }
 
-        public Result<Attendance> Rsvp(Guid userId, AttendanceStatus status)
+        public Result<Attendance> Rsvp(Guid userId, AttendanceStatus status, string? reason)
         {
             if (IsCancelled) return Result<Attendance>.Fail("Cannot RSVP to a cancelled event.");
+            if (status == AttendanceStatus.Declined && string.IsNullOrWhiteSpace(reason))
+                return Result<Attendance>.Fail("A reason is required when declining.");
             var attendance = _attendances.FirstOrDefault(a => a.UserId == userId);
             if (attendance is null) return Result<Attendance>.Fail("User is not part of this event.");
-            attendance.Update(status);
+            attendance.Update(status, reason);
             return Result<Attendance>.Ok(attendance);
         }
     }

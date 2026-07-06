@@ -1,4 +1,5 @@
-﻿using CoparentHub.Domain.Common;
+﻿using CoparentHub.Application.Features.DTOs;
+using CoparentHub.Domain.Common;
 using MediatR;
 
 namespace CoparentHub.Application.Features.Family
@@ -8,10 +9,15 @@ namespace CoparentHub.Application.Features.Family
       Guid UserId
   ) : IRequest<Result<Guid>>;
 
-    public record JoinFamilyCommand(
-        Guid FamilyId,
+    public record JoinFamilyByCodeCommand(
+        string Code,
         Guid UserId
     ) : IRequest<Result<Guid>>;
+
+    public record CreateFamilyInviteCommand(
+        Guid FamilyId,
+        Guid UserId
+    ) : IRequest<Result<FamilyInviteDto>>;
 
     public record AddChildCommand(
         Guid FamilyId,

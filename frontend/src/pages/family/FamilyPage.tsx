@@ -1,5 +1,5 @@
-import { useState, type FC, type FormEvent } from "react";
-import type { User, Family } from "../../types";
+import { useState, useEffect, type FC, type FormEvent } from "react";
+import type { User, Family, FamilyInvite } from "../../types";
 import * as api from "../../api";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
@@ -13,6 +13,14 @@ interface FamilyPageProps {
   onFamChange: (familyId?: string) => void;
 }
 
+const formatExpiry = (iso: string): string => {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "Expired";
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `Expires in ${hours}h`;
+  return `Expires in ${Math.max(1, Math.floor(ms / 60_000))}m`;
+};
+
 const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSelectFamily, onFamChange }) => {
   const [mode, setMode] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -21,8 +29,40 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [invite, setInvite] = useState<FamilyInvite | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteErr, setInviteErr] = useState("");
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
+  const familyFull = (family?.members.length ?? 0) >= 2;
+
+  useEffect(() => {
+    if (!family || familyFull) { setInvite(null); return; }
+    let cancelled = false;
+    setInviteLoading(true);
+    api.getActiveFamilyInvite(family.id)
+      .then(inv => { if (!cancelled) setInvite(inv); })
+      .catch(() => { if (!cancelled) setInvite(null); })
+      .finally(() => { if (!cancelled) setInviteLoading(false); });
+    return () => { cancelled = true; };
+  }, [family?.id, familyFull]);
+
+  const handleGenerateInvite = async () => {
+    if (!family) return;
+    setInviteLoading(true); setInviteErr("");
+    try {
+      setInvite(await api.createFamilyInvite(family.id));
+    } catch (ex: unknown) {
+      setInviteErr(ex instanceof Error ? ex.message : "Failed to generate invite code.");
+    }
+    setInviteLoading(false);
+  };
+
+  const copyInviteCode = () => {
+    if (!invite) return;
+    navigator.clipboard?.writeText(invite.code);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleFamilySubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,7 +71,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     try {
       const familyId = mode === "create"
         ? await api.createFamily({ name: input })
-        : await api.joinFamily(input.trim());
+        : await api.joinFamilyByCode(input.trim());
 
       onFamChange(familyId);
       setMode(null); setInput("");
@@ -65,12 +105,6 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     }
   };
 
-  // ── Copy Family ID ─────────────────────────────────────────────────────
-  const copyId = () => {
-    navigator.clipboard?.writeText(family!.id);
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
-
   const familySheet = mode && (mode === "create" || mode === "join") && (
     <div className="ov" onClick={e => e.target === e.currentTarget && setMode(null)}>
       <div className="sh">
@@ -84,12 +118,13 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
         {err && <div className="err">{err}</div>}
         <form onSubmit={handleFamilySubmit}>
           <div className="f">
-            <label>{mode === "create" ? "Family Name" : "Family ID"}</label>
+            <label>{mode === "create" ? "Family Name" : "Invite Code"}</label>
             <input
               value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={mode === "create" ? "The Smith Family" : "Paste the Family ID here…"}
-              maxLength={mode === "create" ? 100 : 200}
+              onChange={e => setInput(mode === "join" ? e.target.value.toUpperCase() : e.target.value)}
+              placeholder={mode === "create" ? "The Smith Family" : "e.g. AB3DE7GH"}
+              maxLength={mode === "create" ? 100 : 8}
+              style={mode === "join" ? { fontFamily: "'SF Mono','Fira Code',monospace", letterSpacing: "2px" } : undefined}
               required autoFocus
             />
           </div>
@@ -109,7 +144,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
         No family yet
       </div>
       <div style={{ fontSize: 14, color: "var(--muted)", marginBottom: 28, lineHeight: 1.6 }}>
-        Create a new group or join an existing<br />one by pasting a Family ID.
+        Create a new group or join an existing<br />one with an invite code.
       </div>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
         <button className="btn btn-p" style={{ width: "auto", padding: "11px 24px" }} onClick={() => { setErr(""); setMode("create"); }}>
@@ -169,21 +204,50 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 18 }}>Family Group</div>
 
       <div className="fidbox">
-        <div>
-          <div className="fidlbl">Family ID — share to invite</div>
-          <div className="fidval">{family.id.slice(0, 24)}…</div>
-        </div>
-        <button
-          className="btn btn-sm"
-          onClick={copyId}
-          aria-label="Copy family ID to clipboard"
-          style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
-        >
-          {copied
-            ? <><Ico d={Icons.ok} size={13} />Copied!</>
-            : <><Ico d={Icons.copy} size={13} />Copy</>
-          }
-        </button>
+        {familyFull ? (
+          <div className="fidfull">
+            <div className="fidlbl">Invite Code</div>
+            This family already has 2 co-parents — no invite needed.
+          </div>
+        ) : (
+          <>
+            <div>
+              <div className="fidlbl">Invite Code — share to invite</div>
+              {invite ? (
+                <>
+                  <div className="fidval">{invite.code}</div>
+                  <div className="fidexp">{formatExpiry(invite.expiresAt)}</div>
+                </>
+              ) : (
+                <div className="fidexp">{inviteLoading ? "Loading…" : "No active code yet"}</div>
+              )}
+              {inviteErr && <div className="fidexp" style={{ color: "var(--danger)" }}>{inviteErr}</div>}
+            </div>
+            <div className="fidbtns">
+              {invite && (
+                <button
+                  className="btn btn-sm"
+                  onClick={copyInviteCode}
+                  aria-label="Copy invite code to clipboard"
+                  style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
+                >
+                  {copied
+                    ? <><Ico d={Icons.ok} size={13} />Copied!</>
+                    : <><Ico d={Icons.copy} size={13} />Copy</>
+                  }
+                </button>
+              )}
+              <button
+                className="btn btn-sm"
+                onClick={handleGenerateInvite}
+                disabled={inviteLoading}
+                style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
+              >
+                {inviteLoading ? <Spinner /> : invite ? "Regenerate" : "Generate"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="card">
@@ -270,7 +334,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
 
     {familySheet}
 
-    {copied && <div className="toast">✓ Family ID copied to clipboard!</div>}
+    {copied && <div className="toast">✓ Invite code copied to clipboard!</div>}
   </>);
 };
 

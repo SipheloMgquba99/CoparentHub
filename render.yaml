@@ -1,0 +1,50 @@
+services:
+  # Backend API — Docker web service on Render's free plan.
+  - name: coparenthub-api
+    type: web
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Neon (or any Postgres) connection string — pasted in during Blueprint setup, never
+      # committed to the repo. Format: Host=...;Port=5432;Database=...;Username=...;Password=...;Ssl Mode=Require
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # Generated once, pasted in during Blueprint setup — see DEPLOYMENT.md.
+      - key: Jwt__Secret
+        sync: false
+      - key: Jwt__Issuer
+        value: CoparentHub.Api
+      - key: Jwt__Audience
+        value: CoparentHub.Client
+      # AES-256-GCM key (base64, 32 bytes) — generated once, pasted in during Blueprint setup.
+      - key: Encryption__Key
+        sync: false
+      # The frontend's real Render URL isn't known until after first deploy — set this
+      # afterward (see DEPLOYMENT.md "wire up the URLs" step) and Render will redeploy.
+      - key: Cors__AllowedOrigins__0
+        sync: false
+
+  # Frontend — static site (free, unlimited, not counted against web-service instance hours).
+  - name: coparenthub-web
+    type: web
+    runtime: static
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Baked in at build time — same chicken-and-egg as above, set after first deploy of the
+      # api service, then trigger a manual redeploy of this static site to rebuild with it.
+      - key: VITE_API_BASE_URL
+        sync: false

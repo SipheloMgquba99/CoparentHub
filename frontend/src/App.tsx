@@ -13,7 +13,7 @@ import FamPage from "./pages/family/FamilyPage";
 import AuthPage from "./pages/auth/AuthPage";
 import * as api from "./api";
 
-const NOTIFICATIONS_POLL_MS = 30_000;
+const NOTIFICATIONS_POLL_MS = 15_000;
 
 const activeFamilyStorageKey = (userId: string) => `cp_active_family:${userId}`;
 
@@ -85,7 +85,14 @@ const Inner: FC = () => {
 
   const fetchNotifications = useCallback(() => {
     api.getNotifications()
-      .then(setNotifications)
+      .then((next) => {
+        setNotifications(prev => {
+          const prevIds = new Set(prev.map(n => n.id));
+          const hasNew = next.some(n => !prevIds.has(n.id));
+          if (hasNew) setRefresh(r => r + 1);
+          return next;
+        });
+      })
       .catch(() => { });
   }, []);
 

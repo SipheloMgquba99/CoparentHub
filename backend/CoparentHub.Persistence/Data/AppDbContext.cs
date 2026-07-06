@@ -15,6 +15,7 @@ namespace CoparentHub.Persistence.Data
         public DbSet<ScheduledEvent> Events => Set<ScheduledEvent>();
         public DbSet<Attendance> Attendances => Set<Attendance>();
         public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -127,6 +128,8 @@ namespace CoparentHub.Persistence.Data
                 b.Property(a => a.Status)
                     .HasConversion<string>();
 
+                b.Property(a => a.Reason).HasConversion(encryptedNullableString).HasColumnType("text");
+
                 b.HasIndex(a => new { a.EventId, a.UserId })
                     .IsUnique();
             });
@@ -142,6 +145,22 @@ namespace CoparentHub.Persistence.Data
                 b.Property(n => n.Message).HasConversion(encryptedString).HasColumnType("text").IsRequired();
 
                 b.HasIndex(n => n.UserId);
+            });
+
+            m.Entity<FamilyInvite>(b =>
+            {
+                b.HasKey(i => i.Id);
+                b.Property(i => i.Id).ValueGeneratedNever();
+
+                b.Property(i => i.Code).HasMaxLength(8).IsRequired();
+                b.HasIndex(i => i.Code).IsUnique();
+
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(i => i.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(i => i.FamilyId);
             });
         }
     }

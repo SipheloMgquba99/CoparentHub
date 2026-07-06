@@ -1,4 +1,4 @@
-import { useState, useEffect, type FC } from "react";
+import { useState, useEffect, useRef, type FC } from "react";
 import type { User, Family, ScheduledEvent, WeeklySchedule, AttendanceStatus } from "../../types";
 import * as api from "../../api";
 import { EventSheet, EventRow } from "../../components/events";
@@ -12,6 +12,8 @@ interface SchedPageProps {
   refresh: number;
   onEventsChanged: () => void;
 }
+
+const SCHEDULE_POLL_MS = 20_000;
 
 const getMonday = (): string => {
   const d = new Date();
@@ -35,15 +37,28 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
   const [edit, setEdit] = useState<ScheduledEvent | null>(null);
   const [add, setAdd] = useState<boolean>(false);
   const [tick, setTick] = useState<number>(0);
+  const silentRef = useRef(false);
 
   useEffect(() => {
     if (!family) { setBusy(false); return; }
-    setBusy(true);
+    if (!silentRef.current) setBusy(true);
     api.getWeekly(family.id, ws)
       .then(data => setWeek(data))
       .catch(() => setWeek(null))
-      .finally(() => setBusy(false));
+      .finally(() => {
+        setBusy(false);
+        silentRef.current = false;
+      });
   }, [ws, tick, refresh, family?.id]);
+
+  useEffect(() => {
+    if (!family) return;
+    const id = setInterval(() => {
+      silentRef.current = true;
+      setTick(t => t + 1);
+    }, SCHEDULE_POLL_MS);
+    return () => clearInterval(id);
+  }, [family?.id]);
 
   const shift = (n: number) => {
     const d = new Date(ws + "T00:00:00");
@@ -60,9 +75,9 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
     onEventsChanged();
   };
 
-  const handleRsvp = async (eventId: string, status: AttendanceStatus) => {
+  const handleRsvp = async (eventId: string, status: AttendanceStatus, reason?: string) => {
     if (!family) return;
-    await api.rsvp(family.id, eventId, { status });
+    await api.rsvp(family.id, eventId, { status, reason });
     setTick(t => t + 1);
   };
 

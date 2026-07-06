@@ -5,6 +5,7 @@ export type AttendanceStatus = "Accepted" | "Tentative" | "Declined";
 export interface Attendance {
   userId: string;
   status: AttendanceStatus;
+  reason: string | null;
 }
 
 export interface ScheduledEvent {

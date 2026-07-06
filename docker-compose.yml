@@ -7,22 +7,29 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Password12345#}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d CoparentHubDb"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 20s
 
   seq:
     image: datalust/seq:latest
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
     volumes:
       - seq-data:/data
     ports:
       - "${SEQ_PORT:-5341}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build:
@@ -33,7 +40,7 @@ services:
       db:
         condition: service_healthy
       seq:
-        condition: service_started
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
