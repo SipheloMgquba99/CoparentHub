@@ -2,9 +2,12 @@ import type {
   Family,
   AddChildRequest,
   CreateFamilyRequest,
-  Child,
 } from "../types";
 import { request } from "./http";
+
+export function getMyFamilies(): Promise<Family[]> {
+  return request<Family[]>("GET", "/family");
+}
 
 export function getFamily(familyId: string): Promise<Family> {
   if (!familyId) {
@@ -14,26 +17,26 @@ export function getFamily(familyId: string): Promise<Family> {
   return request<Family>("GET", `/family/${familyId}`);
 }
 
-export function createFamily(req: CreateFamilyRequest): Promise<Family> {
+export function createFamily(req: CreateFamilyRequest): Promise<string> {
   if (!req?.name) {
     return Promise.reject(new Error("Family name is required"));
   }
 
-  return request<Family>("POST", "/family", req);
+  return request<string>("POST", "/family", req);
 }
 
-export function joinFamily(familyId: string): Promise<Family> {
+export function joinFamily(familyId: string): Promise<string> {
   if (!familyId) {
     return Promise.reject(new Error("familyId is required"));
   }
 
-  return request<Family>("POST", `/family/${familyId}/join`);
+  return request<string>("POST", `/family/${familyId}/join`);
 }
 
 export function addChild(
   familyId: string,
   req: AddChildRequest
-): Promise<Child> {
+): Promise<string> {
   if (!familyId) {
     return Promise.reject(new Error("familyId is required"));
   }
@@ -42,7 +45,7 @@ export function addChild(
     return Promise.reject(new Error("Child name is required"));
   }
 
-  return request<Child>(
+  return request<string>(
     "POST",
     `/family/${familyId}/children`,
     req
@@ -52,14 +55,14 @@ export function addChild(
 export function removeChild(
   familyId: string,
   childId: string
-): Promise<void> {
+): Promise<string> {
   if (!familyId || !childId) {
     return Promise.reject(
       new Error("familyId and childId are required")
     );
   }
 
-  return request<void>(
+  return request<string>(
     "DELETE",
     `/family/${familyId}/children/${childId}`
   );

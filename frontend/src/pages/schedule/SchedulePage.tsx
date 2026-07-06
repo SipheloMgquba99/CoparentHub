@@ -4,6 +4,7 @@ import * as api from "../../api";
 import { EventSheet, EventRow } from "../../components/events";
 import { Ico, Icons } from "../../components/icons";
 import { PageSpinner } from "../../components/ui";
+import { toLocalDateString } from "../../lib/utils";
 
 interface SchedPageProps {
   user: User;
@@ -16,7 +17,7 @@ const getMonday = (): string => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - d.getDay());
-  return d.toISOString().slice(0, 10);
+  return toLocalDateString(d);
 };
 
 // Safe date formatter
@@ -47,8 +48,10 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
   const shift = (n: number) => {
     const d = new Date(ws + "T00:00:00");
     d.setDate(d.getDate() + n * 7);
-    setWs(d.toISOString().slice(0, 10));
+    setWs(toLocalDateString(d));
   };
+
+  const jumpToToday = () => setWs(getMonday());
 
   const handleCancel = async (eventId: string) => {
     if (!family) return;
@@ -70,7 +73,8 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
     onEventsChanged();
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateString(new Date());
+  const isCurrentWeek = ws === getMonday();
 
   return (
     <>
@@ -84,10 +88,21 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
       </div>
 
       <div className="wnav">
-        <button type="button" className="wbtn" onClick={() => shift(-1)}><Ico d={Icons.chL} size={16} /></button>
-        <div className="wlbl">{week ? `${fmt(week.from)} – ${fmt(week.to)}` : "..."}</div>
-        <button type="button" className="wbtn" onClick={() => shift(1)}><Ico d={Icons.chR} size={16} /></button>
+        <button type="button" className="wbtn" onClick={() => shift(-1)} aria-label="Previous week"><Ico d={Icons.chL} size={16} /></button>
+        <div className="wlbl">{week ? `${fmt(week.weekStart)} – ${fmt(week.weekEnd)}` : "..."}</div>
+        <button type="button" className="wbtn" onClick={() => shift(1)} aria-label="Next week"><Ico d={Icons.chR} size={16} /></button>
       </div>
+
+      {!isCurrentWeek && (
+        <button
+          type="button"
+          className="btn btn-o btn-sm"
+          onClick={jumpToToday}
+          style={{ width: "auto", margin: "-8px auto 16px", display: "block", padding: "6px 16px" }}
+        >
+          Jump to this week
+        </button>
+      )}
 
       {!family
         ? <div className="empty" style={{ paddingTop: 40 }}>Join or create a family to see events.</div>

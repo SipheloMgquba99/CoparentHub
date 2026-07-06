@@ -17,8 +17,6 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
   const my  = ev.attendances.find(a => a.userId === userId);
   const oth = ev.attendances.filter(a => a.userId !== userId);
 
-  // In compact (home) mode: only show RSVP buttons when status is Tentative or no response yet.
-  // In full (schedule) mode: always show RSVP buttons so user can change their mind.
   const needsResponse = !my || my.status === "Tentative";
   const showRsvp = onRsvp && !ev.isCancelled && (compact ? needsResponse : true);
 
@@ -29,7 +27,6 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
         <div className="etitle">
           {ev.title}
           {ev.isCancelled && <span className="bcx">Cancelled</span>}
-          {/* Show a small pill on home when already accepted */}
           {compact && my?.status === "Accepted" && !ev.isCancelled && (
             <span style={{
               display: "inline-block",
@@ -76,7 +73,6 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
           </div>
         )}
 
-        {/* Tentative notice on home screen */}
         {compact && my?.status === "Tentative" && !ev.isCancelled && (
           <div style={{ fontSize: 11, color: "#92400e", background: "#fff7e3", padding: "3px 8px", borderRadius: 6, marginTop: 5, display: "inline-block", fontWeight: 600 }}>
             ⏳ Tentative — confirm below
@@ -102,12 +98,12 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
       {!ev.isCancelled && (onEdit || onCancel) && ev.createdByUserId === userId && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {onEdit && (
-            <button type="button" className="btn btn-gh btn-sm" style={{ padding: 6 }} onClick={() => onEdit(ev)} title="Edit">
+            <button type="button" className="btn btn-gh btn-sm" style={{ padding: 6 }} onClick={() => onEdit(ev)} title="Edit" aria-label={`Edit ${ev.title}`}>
               <Ico d={Icons.edit} size={14} />
             </button>
           )}
           {onCancel && (
-            <button type="button" className="btn btn-gh btn-sm" style={{ padding: 6, color: "var(--danger)" }} onClick={() => onCancel(ev.id)} title="Cancel">
+            <button type="button" className="btn btn-gh btn-sm" style={{ padding: 6, color: "var(--danger)" }} onClick={() => onCancel(ev.id)} title="Cancel" aria-label={`Cancel ${ev.title}`}>
               <Ico d={Icons.x} size={14} />
             </button>
           )}

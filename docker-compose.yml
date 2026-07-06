@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: CoparentHubDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Password12345#}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d CoparentHubDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq-data:/data
+    ports:
+      - "${SEQ_PORT:-5341}:80"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=CoparentHubDb;Username=postgres;Password=${POSTGRES_PASSWORD:-Password12345#}"
+      Jwt__Secret: ${JWT_SECRET:-b2f77657a5967af0e087f2551b489027be85ba313a9e7b9e5265eb4a73c5153adc557cde971802c1b3117bb63d165c544f0d7d853d04707f05fd4a8070ec5004}
+      Jwt__Issuer: CoparentHub.Api
+      Jwt__Audience: CoparentHub.Client
+      Encryption__Key: ${ENCRYPTION_KEY:-uA/jm+UsS5F7TUjucMjcb7KJ/PuawkqdpYFqmFqTD6o=}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:8081}
+      Seq__ServerUrl: http://seq:80
+    ports:
+      - "${API_PORT:-5247}:8080"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5247}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8081}:80"
+
+volumes:
+  db-data:
+  seq-data:

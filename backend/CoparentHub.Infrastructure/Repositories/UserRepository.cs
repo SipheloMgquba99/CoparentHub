@@ -23,6 +23,21 @@ namespace CoparentHub.Infrastructure.Repositories
            .Include(f => f.Members)
            .Include(f => f.Children)
            .FirstOrDefaultAsync(f => f.Id == id, ct);
+
+        public async Task<List<Family>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
+        {
+            var familyIds = await db.Members
+                .Where(m => m.UserId == userId)
+                .Select(m => m.FamilyId)
+                .ToListAsync(ct);
+
+            return await db.Families
+                .Include(f => f.Members)
+                .Include(f => f.Children)
+                .Where(f => familyIds.Contains(f.Id))
+                .ToListAsync(ct);
+        }
+
         public void Add(Family family) => db.Families.Add(family);
     }
 
@@ -61,12 +76,32 @@ namespace CoparentHub.Infrastructure.Repositories
         public void Add(ScheduledEvent ev) => db.Events.Add(ev);
     }
 
-    public class UnitOfWork(AppDbContext db, IUserRepository users, IFamilyRepository families, IEventRepository events)
+    public class NotificationRepository(AppDbContext db) : INotificationRepository
+    {
+        public Task<Notification?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            db.Notifications.FirstOrDefaultAsync(n => n.Id == id, ct);
+
+        public Task<List<Notification>> GetByUserAsync(Guid userId, CancellationToken ct = default) =>
+            db.Notifications.Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(100)
+                .ToListAsync(ct);
+
+        public void Add(Notification notification) => db.Notifications.Add(notification);
+    }
+
+    public class UnitOfWork(
+        AppDbContext db,
+        IUserRepository users,
+        IFamilyRepository families,
+        IEventRepository events,
+        INotificationRepository notifications)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
         public IFamilyRepository Families { get; } = families;
         public IEventRepository Events { get; } = events;
+        public INotificationRepository Notifications { get; } = notifications;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
     }
 }

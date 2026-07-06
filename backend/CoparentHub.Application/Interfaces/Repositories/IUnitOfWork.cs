@@ -9,6 +9,7 @@ namespace CoparentHub.Application.Interfaces.Repositories
         IUserRepository Users { get; }
         IFamilyRepository Families { get; }
         IEventRepository Events { get; }
+        INotificationRepository Notifications { get; }
         Task SaveAsync(CancellationToken ct = default);
     }
 }

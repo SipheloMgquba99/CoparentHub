@@ -9,6 +9,10 @@ namespace CoparentHub.Api.Controllers
     [Authorize]
     public class FamilyController(ISender sender) : ApiController
     {
+        [HttpGet]
+        public async Task<IActionResult> GetMine(CancellationToken ct)
+            => ToResponse(await sender.Send(new GetMyFamiliesQuery(CurrentUserId), ct));
+
         [HttpGet("{familyId:guid}")]
         public async Task<IActionResult> Get(Guid familyId, CancellationToken ct)
             => ToResponse(await sender.Send(new GetFamilyQuery(familyId, CurrentUserId), ct));

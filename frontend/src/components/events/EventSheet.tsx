@@ -1,6 +1,7 @@
 import { useState, type FC, type FormEvent } from "react";
 import type { ScheduledEvent, EventType, Child } from "../../types";
 import { Spinner } from '../ui';
+import { Ico, Icons } from '../icons';
 import { EVENT_TYPES, toLocalDatetime } from '../../lib/utils';
 
 export interface EventSheetData {
@@ -54,7 +55,12 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
     <div className="ov" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sh">
         <div className="shdrag" />
-        <div className="shtitle">{editing ? "Edit Event" : title}</div>
+        <div className="shhead">
+          <div className="shtitle">{editing ? "Edit Event" : title}</div>
+          <button type="button" className="shclose" onClick={onClose} aria-label="Close">
+            <Ico d={Icons.x} size={15} />
+          </button>
+        </div>
         {err && <div className="err">{err}</div>}
         <form onSubmit={submit}>
 
@@ -67,7 +73,7 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
 
           <div className="f">
             <label>Title</label>
-            <input value={titl} onChange={e => setTitl(e.target.value)} placeholder="Doctor appointment…" required />
+            <input value={titl} onChange={e => setTitl(e.target.value)} placeholder="Doctor appointment…" maxLength={200} required />
           </div>
 
           <div className="f" style={{ marginBottom: 14 }}>
@@ -80,8 +86,6 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
               ))}
             </div>
           </div>
-
-          {/* Stacked so datetime-local inputs never get clipped */}
           <div className="f">
             <label>Starts</label>
             <input type="datetime-local" value={sa} onChange={e => setSa(e.target.value)} required />
@@ -94,7 +98,7 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
 
           <div className="f">
             <label>Notes</label>
-            <input value={note} onChange={e => setNote(e.target.value)} placeholder="Any details…" />
+            <input value={note} onChange={e => setNote(e.target.value)} placeholder="Any details…" maxLength={1000} />
           </div>
 
           <button className="btn btn-p" type="submit" disabled={busy} style={{ marginTop: 12 }}>

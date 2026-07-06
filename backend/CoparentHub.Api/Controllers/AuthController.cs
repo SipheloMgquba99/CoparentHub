@@ -2,10 +2,12 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CoparentHub.Api.Controllers
 {
     [Route("api/auth")]
+    [EnableRateLimiting("auth")]
     public class AuthController(ISender sender) : ApiController
     {
         [HttpPost("register")]

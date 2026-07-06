@@ -36,6 +36,19 @@ namespace CoparentHub.Application.Features.Events
 
             uow.Events.Add(ev);
 
+            var creator = await uow.Users.GetByIdAsync(cmd.UserId, ct);
+            var creatorName = creator?.FullName ?? "Someone";
+
+            foreach (var member in family.Members.Where(m => m.UserId != cmd.UserId))
+            {
+                uow.Notifications.Add(Notification.Create(
+                    userId: member.UserId,
+                    familyId: cmd.FamilyId,
+                    type: NotificationType.EventCreated,
+                    message: $"{creatorName} added \"{cmd.Title}\" to the schedule.",
+                    eventId: ev.Id));
+            }
+
             await uow.SaveAsync(ct);
 
             return Result<Guid>.Ok(ev.Id);
@@ -84,6 +97,23 @@ namespace CoparentHub.Application.Features.Events
             if (!result.IsSuccess)
                 return Result<Guid>.Fail(result.Error!);
 
+            var family = await uow.Families.GetByIdAsync(ev.FamilyId, ct);
+            if (family is not null)
+            {
+                var canceller = await uow.Users.GetByIdAsync(cmd.UserId, ct);
+                var cancellerName = canceller?.FullName ?? "Someone";
+
+                foreach (var member in family.Members.Where(m => m.UserId != cmd.UserId))
+                {
+                    uow.Notifications.Add(Notification.Create(
+                        userId: member.UserId,
+                        familyId: ev.FamilyId,
+                        type: NotificationType.EventCancelled,
+                        message: $"{cancellerName} cancelled \"{ev.Title}\".",
+                        eventId: ev.Id));
+                }
+            }
+
             await uow.SaveAsync(ct);
 
             return Result<Guid>.Ok(ev.Id);
@@ -104,6 +134,19 @@ namespace CoparentHub.Application.Features.Events
 
             if (!result.IsSuccess)
                 return Result<Guid>.Fail(result.Error!);
+
+            if (ev.CreatedByUserId != cmd.UserId)
+            {
+                var responder = await uow.Users.GetByIdAsync(cmd.UserId, ct);
+                var responderName = responder?.FullName ?? "Someone";
+
+                uow.Notifications.Add(Notification.Create(
+                    userId: ev.CreatedByUserId,
+                    familyId: ev.FamilyId,
+                    type: NotificationType.EventRsvp,
+                    message: $"{responderName} marked \"{ev.Title}\" as {cmd.Status}.",
+                    eventId: ev.Id));
+            }
 
             await uow.SaveAsync(ct);
 
@@ -181,6 +224,7 @@ namespace CoparentHub.Application.Features.Events
                 e.EndsAt,
                 e.Notes,
                 e.IsCancelled,
+                e.CreatedByUserId,
                 e.Attendances
                     .Select(a => new AttendanceDto(a.UserId, a.Status.ToString(), a.RespondedAt))
                     .ToList()

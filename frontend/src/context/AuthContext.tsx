@@ -1,22 +1,19 @@
 import {
   createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
   type FC,
 } from "react";
-import type { User, LoginRequest, RegisterRequest } from "../types";
+import type { User, LoginRequest, RegisterRequest, AuthResponse } from "../types";
 import * as api from "../api";
-import { getToken } from "../api";
+import { getToken, setUnauthorizedHandler } from "../api";
 
-// --- JWT decoding helpers ---
 interface JwtPayload {
   sub: string;
   email: string;
-  fullName?: string;
-  familyId?: string;
   exp: number;
 }
 
@@ -30,74 +27,137 @@ function decodeJwt(token: string): JwtPayload | null {
   }
 }
 
-function userFromToken(token: string): User | null {
+function isTokenExpired(token: string): boolean {
   const p = decodeJwt(token);
-  if (!p) return null;
-  if (p.exp * 1000 < Date.now()) return null;
+  return !p || p.exp * 1000 <= Date.now();
+}
+
+function msUntilExpiry(token: string): number {
+  const p = decodeJwt(token);
+  if (!p) return 0;
+  return p.exp * 1000 - Date.now();
+}
+
+const PROFILE_KEY = "cp_profile";
+
+interface CachedProfile {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+function cacheProfile(p: CachedProfile): void {
+  sessionStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+}
+
+function readCachedProfile(): CachedProfile | null {
+  try {
+    const raw = sessionStorage.getItem(PROFILE_KEY);
+    return raw ? (JSON.parse(raw) as CachedProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearCachedProfile(): void {
+  sessionStorage.removeItem(PROFILE_KEY);
+}
+
+function userFromAuthResponse(res: AuthResponse): User {
+  cacheProfile({ id: res.userId, fullName: res.fullName, email: res.email });
   return {
-    id: p.sub,
-    email: p.email,
-    fullName: p.fullName ?? p.email,
-    familyId: p.familyId ?? null,
+    id: res.userId,
+    fullName: res.fullName,
+    email: res.email,
   };
 }
 
-// --- Auth context ---
-interface AuthContextValue {
+function userFromStoredToken(token: string): User | null {
+  const claims = decodeJwt(token);
+  if (!claims) return null;
+  const cached = readCachedProfile();
+  return {
+    id: claims.sub,
+    email: claims.email,
+    fullName: cached?.id === claims.sub ? cached.fullName : claims.email,
+  };
+}
+
+export interface AuthContextValue {
   user: User | null;
-  loading: boolean; // renamed from isLoading
+  loading: boolean;
   login: (req: LoginRequest) => Promise<void>;
   register: (req: RegisterRequest) => Promise<void>;
   logout: () => void;
-  refreshUser: (familyId: string) => void;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
-export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
-};
-
-// --- AuthProvider component ---
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // Initialize user from token on mount
-  useEffect(() => {
+  const initialTokenRef = useRef<string | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
     const token = getToken();
-    if (token) {
-      const u = userFromToken(token);
-      if (u) setUser(u);
-      else api.logout();
+    if (!token) return null;
+    if (isTokenExpired(token)) {
+      api.logout();
+      clearCachedProfile();
+      return null;
     }
-    setLoading(false);
-  }, []);
-
-  const login = useCallback(async (req: LoginRequest) => {
-    const { token, user: u } = await api.login(req);
-    setUser(u ?? userFromToken(token));
-  }, []);
-
-  const register = useCallback(async (req: RegisterRequest) => {
-    const { token, user: u } = await api.register(req);
-    setUser(u ?? userFromToken(token));
-  }, []);
+    const u = userFromStoredToken(token);
+    if (!u) {
+      api.logout();
+      clearCachedProfile();
+      return null;
+    }
+    initialTokenRef.current = token;
+    return u;
+  });
+  const loading = false;
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const logout = useCallback(() => {
+    if (expiryTimer.current) clearTimeout(expiryTimer.current);
     api.logout();
+    clearCachedProfile();
     setUser(null);
   }, []);
 
-  const refreshUser = useCallback((familyId: string) => {
-    setUser((prev) => (prev ? { ...prev, familyId } : prev));
-  }, []);
+  const scheduleExpiryLogout = useCallback((token: string) => {
+    if (expiryTimer.current) clearTimeout(expiryTimer.current);
+    const ms = msUntilExpiry(token);
+    if (ms <= 0) {
+      logout();
+      return;
+    }
+    expiryTimer.current = setTimeout(logout, ms);
+  }, [logout]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
+
+  useEffect(() => {
+    if (initialTokenRef.current) {
+      scheduleExpiryLogout(initialTokenRef.current);
+    }
+  }, [scheduleExpiryLogout]);
+
+  const login = useCallback(async (req: LoginRequest) => {
+    const res = await api.login(req);
+    setUser(userFromAuthResponse(res));
+    scheduleExpiryLogout(res.token);
+  }, [scheduleExpiryLogout]);
+
+  const register = useCallback(async (req: RegisterRequest) => {
+    const res = await api.register(req);
+    setUser(userFromAuthResponse(res));
+    scheduleExpiryLogout(res.token);
+  }, [scheduleExpiryLogout]);
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, refreshUser }}
+      value={{ user, loading, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>

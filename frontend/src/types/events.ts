@@ -23,13 +23,13 @@ export interface ScheduledEvent {
 }
 
 export interface WeekDay {
-  date: string; // "YYYY-MM-DD"
+  date: string; 
   dayName: string;
   events: ScheduledEvent[];
 }
 
 export interface WeeklySchedule {
-  from: string;
-  to: string;
+  weekStart: string;
+  weekEnd: string;
   days: WeekDay[];
 }

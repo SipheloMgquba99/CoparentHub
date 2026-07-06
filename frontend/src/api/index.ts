@@ -1,4 +1,5 @@
 export * from "./auth";
 export * from "./family";
 export * from "./events";
-export { getToken } from './http'
+export * from "./notifications";
+export { getToken, setUnauthorizedHandler } from './http'

@@ -170,9 +170,9 @@ html, body {
 }
 
 /* ── THEME TOGGLE BUTTON ── */
-.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .theme-btn {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 32px; height: 32px; border-radius: 50%;
   background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.15);
   cursor: pointer; transition: all .2s; font-size: 15px;
@@ -218,15 +218,16 @@ html, body {
 .shell { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px 14px;
+  flex-wrap: wrap; row-gap: 10px;
+  padding: 14px 16px 12px;
   background: var(--topbar-bg);
   flex-shrink: 0;
   transition: background .25s;
 }
-.tlogo { font-family: 'Fraunces', serif; font-size: 21px; color: var(--topbar-text); font-weight: 300; letter-spacing: -.3px; }
+.tlogo { font-family: 'Fraunces', serif; font-size: 19px; color: var(--topbar-text); font-weight: 300; letter-spacing: -.3px; flex-shrink: 0; }
 .tlogo em { font-style: italic; color: var(--gold); }
 .tav {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
   background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.18);
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; color: var(--topbar-text);
@@ -415,6 +416,15 @@ html, body {
 .cn { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -.1px; }
 .cd { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .cage { font-size: 11px; color: var(--accent); font-weight: 700; background: var(--accent-dim); padding: 3px 10px; border-radius: 20px; }
+.myfam-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.myfam-row:last-child { border-bottom: none; }
+.myfam-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -.1px; }
+.myfam-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.myfam-badge { font-size: 11px; color: var(--accent); font-weight: 700; background: var(--accent-dim); padding: 3px 10px; border-radius: 20px; }
+.myfam-switch { font-size: 11px; color: var(--muted); font-weight: 600; }
 .fidbox {
   background: var(--fidbox-bg);
   border-radius: var(--r); padding: 16px 18px;
@@ -439,7 +449,15 @@ html, body {
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .shdrag { width: 36px; height: 4px; background: var(--sheet-drag); border-radius: 4px; margin: 14px auto 22px; }
-.shtitle { font-family: 'Fraunces', serif; font-size: 22px; color: var(--text); margin-bottom: 22px; font-weight: 300; letter-spacing: -.3px; }
+.shhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.shtitle { font-family: 'Fraunces', serif; font-size: 22px; color: var(--text); font-weight: 300; letter-spacing: -.3px; }
+.shclose {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%; margin-top: -3px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.shclose:hover { background: var(--border); color: var(--text); }
 
 /* ── CHIPS ── */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -469,6 +487,183 @@ html, body {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ── FAMILY SWITCHER ── */
+.fswitch-wrap { position: relative; }
+.fswitch-btn {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0;
+  height: 32px; padding: 0 12px; border-radius: 16px;
+  background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.15);
+  cursor: pointer; transition: all .2s; color: var(--topbar-text);
+  font-size: 12.5px; font-weight: 600; font-family: 'Outfit', sans-serif;
+  max-width: 140px;
+}
+.fswitch-btn:hover { background: rgba(255,255,255,.2); }
+.fswitch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fswitch-menu {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: 220px; max-height: 320px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow-lg);
+  z-index: 50; padding: 8px;
+}
+.fswitch-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left;
+  padding: 10px 10px; border-radius: 10px; border: none;
+  background: transparent; cursor: pointer; margin-bottom: 2px;
+  font-size: 13.5px; color: var(--text); font-family: 'Outfit', sans-serif;
+}
+.fswitch-item:hover { background: var(--surface-2); }
+.fswitch-item.active { color: var(--accent); font-weight: 600; }
+.fswitch-add { color: var(--accent); font-weight: 600; }
+
+/* ── NOTIFICATIONS ── */
+.nbell-wrap { position: relative; }
+.nbell-btn { position: relative; }
+.nbell-badge {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 15px; height: 15px; border-radius: 8px;
+  background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 15px;
+  text-align: center; padding: 0 3px;
+  border: 2px solid var(--surface);
+}
+.nbell-menu {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: 300px; max-height: 360px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow-lg);
+  z-index: 50; padding: 8px;
+}
+.nbell-hd {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px;
+}
+.nbell-empty { padding: 20px 8px; text-align: center; font-size: 13px; color: var(--muted); }
+.nbell-item {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 8px; border-radius: 10px; border: none;
+  background: transparent; cursor: default; margin-bottom: 2px;
+}
+.nbell-item.unread { background: var(--surface-2); cursor: pointer; }
+.nbell-row { display: flex; gap: 8px; align-items: flex-start; }
+.nbell-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0; }
+.nbell-col { flex: 1; }
+.nbell-msg { font-size: 13px; color: var(--text); line-height: 1.4; }
+.nbell-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
 /* ── MISC ── */
 .page-title { font-family: 'Fraunces', serif; font-size: 26px; color: var(--text); margin-bottom: 18px; font-weight: 300; letter-spacing: -.4px; }
+
+/* ═══════════════════════════════════════════════════
+   NARROW PHONES (≤380px)
+   The topbar packs a logo, family switcher, bell,
+   theme toggle and avatar into one row — tighten
+   everything up so it doesn't feel cramped/clustered.
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .tlogo { font-size: 16px; }
+  .topbar-right { gap: 6px; }
+  .fswitch-btn { max-width: 92px; padding: 0 9px; }
+  .theme-btn, .tav { width: 30px; height: 30px; }
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE — TABLET / DESKTOP (≥720px)
+   The core layout below this breakpoint is a mobile
+   "app" frame; above it we open the frame up into a
+   proper desktop layout instead of just stretching the
+   phone-sized card.
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 720px) {
+  html, body { background: var(--bg, #081220); }
+
+  /* Auth screen becomes a centered card instead of an edge-to-edge sheet */
+  .ascreen {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--bg);
+  }
+  .ascreen > .ahero,
+  .ascreen > .abody {
+    width: 100%;
+    max-width: 440px;
+  }
+  .ahero { border-radius: var(--r) var(--r) 0 0; padding-top: 48px; }
+  .abody { border-radius: 0 0 var(--r) var(--r); box-shadow: var(--shadow-lg); }
+
+  /* Bottom sheets become centered modal dialogs */
+  .ov { align-items: center; padding: 24px; }
+  .sh {
+    max-width: 480px;
+    border-radius: 24px;
+    max-height: 85vh;
+  }
+  .shdrag { display: none; }
+}
+
+@media (min-width: 900px) {
+  #root { align-items: stretch; }
+
+  /* Fill the whole viewport on desktop/laptop instead of floating as a
+     boxed, mobile-width card in the middle of the screen. */
+  .app {
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* Shell switches from a bottom tab bar to a left sidebar, reusing the
+     exact same markup (Shell.tsx) — only the layout changes. */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "nav    page";
+    height: 100%;
+  }
+  .topbar { grid-area: topbar; padding: 18px 28px; }
+  .nav {
+    grid-area: nav;
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 20px 12px;
+    border-top: none;
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+  .ni {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: var(--rm);
+  }
+  .ni.on { background: rgba(255,255,255,.08); }
+  .ni span {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .page {
+    grid-area: page;
+    padding: 28px 40px 48px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Give stat cards and cards a little more breathing room on wide screens */
+  .stats { grid-template-columns: repeat(2, minmax(0, 220px)); }
+}
 `;

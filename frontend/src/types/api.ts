@@ -21,11 +21,3 @@ export interface RsvpRequest {
   status: AttendanceStatus;
 }
 
-export interface AddChildRequest {
-  name: string;
-  dateOfBirth?: string | null; // "YYYY-MM-DD"
-}
-
-export interface CreateFamilyRequest {
-  name: string;
-}

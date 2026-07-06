@@ -14,7 +14,12 @@ export const calcAge = (dob: string | null): number | null => {
   const b = new Date(dob), n = new Date();
   let a = n.getFullYear() - b.getFullYear();
   if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
-  return a;
+  return a < 0 ? null : a;
+};
+
+export const toLocalDateString = (d: Date): string => {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
 export const toLocalDatetime = (iso: string): string => {
@@ -24,6 +29,18 @@ export const toLocalDatetime = (iso: string): string => {
 };
 
 export const EVENT_TYPES: EventType[] = ["School", "Medical", "Activity", "Other"];
+
+export const timeAgo = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
 
 export const RSVP_STATUSES: AttendanceStatus[] = ["Accepted", "Tentative", "Declined"];
 

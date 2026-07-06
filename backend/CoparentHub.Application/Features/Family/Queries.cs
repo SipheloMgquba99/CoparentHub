@@ -8,4 +8,8 @@ namespace CoparentHub.Application.Features.Family
     Guid FamilyId,
     Guid UserId
     ) : IRequest<Result<FamilyDto>>;
+
+    public record GetMyFamiliesQuery(
+        Guid UserId
+    ) : IRequest<Result<List<FamilyDto>>>;
 }

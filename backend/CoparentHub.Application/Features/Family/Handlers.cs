@@ -16,14 +16,9 @@ namespace CoparentHub.Application.Features.Family
             if (user is null)
                 return Result<Guid>.Fail("User not found.");
 
-            if (user.FamilyId.HasValue)
-                return Result<Guid>.Fail("User already belongs to a family.");
-
             var family = CoparentHub.Domain.Entities.Family.Create(cmd.Name, cmd.UserId);
 
             uow.Families.Add(family);
-
-            user.JoinFamily(family.Id);
 
             await uow.SaveAsync(ct);
 
@@ -41,9 +36,6 @@ namespace CoparentHub.Application.Features.Family
             if (user is null)
                 return Result<Guid>.Fail("User not found.");
 
-            if (user.FamilyId.HasValue)
-                return Result<Guid>.Fail("User already belongs to a family.");
-
             var family = await uow.Families.GetByIdAsync(cmd.FamilyId, ct);
 
             if (family is null)
@@ -53,8 +45,6 @@ namespace CoparentHub.Application.Features.Family
 
             if (!result.IsSuccess)
                 return Result<Guid>.Fail(result.Error!);
-
-            user.JoinFamily(family.Id);
 
             await uow.SaveAsync(ct);
 
@@ -125,6 +115,29 @@ namespace CoparentHub.Application.Features.Family
             if (!family.IsMember(q.UserId))
                 return Result<FamilyDto>.Fail("Access denied.");
 
+            return Result<FamilyDto>.Ok(await FamilyMapper.ToDto(family, uow, ct));
+        }
+    }
+
+    public class GetMyFamiliesHandler(IUnitOfWork uow)
+        : IRequestHandler<GetMyFamiliesQuery, Result<List<FamilyDto>>>
+    {
+        public async Task<Result<List<FamilyDto>>> Handle(GetMyFamiliesQuery q, CancellationToken ct)
+        {
+            var families = await uow.Families.GetByUserIdAsync(q.UserId, ct);
+
+            var dtos = new List<FamilyDto>();
+            foreach (var family in families)
+                dtos.Add(await FamilyMapper.ToDto(family, uow, ct));
+
+            return Result<List<FamilyDto>>.Ok(dtos);
+        }
+    }
+
+    internal static class FamilyMapper
+    {
+        public static async Task<FamilyDto> ToDto(CoparentHub.Domain.Entities.Family family, IUnitOfWork uow, CancellationToken ct)
+        {
             var members = new List<MemberDto>();
 
             foreach (var m in family.Members)
@@ -145,14 +158,7 @@ namespace CoparentHub.Application.Features.Family
                 .Select(c => new ChildDto(c.Id, c.Name, c.DateOfBirth))
                 .ToList();
 
-            var dto = new FamilyDto(
-                family.Id,
-                family.Name,
-                members,
-                children
-            );
-
-            return Result<FamilyDto>.Ok(dto);
+            return new FamilyDto(family.Id, family.Name, members, children);
         }
     }
 }

@@ -1,9 +1,12 @@
-﻿using CoparentHub.Domain.Entities;
+﻿using CoparentHub.Domain.Common;
+using CoparentHub.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Globalization;
 
 namespace CoparentHub.Persistence.Data
 {
-    public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+    public class AppDbContext(DbContextOptions<AppDbContext> options, IFieldEncryptor encryptor) : DbContext(options)
     {
         public DbSet<User> Users => Set<User>();
         public DbSet<Family> Families => Set<Family>();
@@ -11,9 +14,25 @@ namespace CoparentHub.Persistence.Data
         public DbSet<Child> Children => Set<Child>();
         public DbSet<ScheduledEvent> Events => Set<ScheduledEvent>();
         public DbSet<Attendance> Attendances => Set<Attendance>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+
+        private static DateOnly? ParseEncryptedDate(string? decrypted) =>
+            decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
 
         protected override void OnModelCreating(ModelBuilder m)
         {
+            var encryptedString = new ValueConverter<string, string>(
+                v => encryptor.Encrypt(v)!,
+                v => encryptor.Decrypt(v)!);
+
+            var encryptedNullableString = new ValueConverter<string?, string?>(
+                v => encryptor.Encrypt(v),
+                v => encryptor.Decrypt(v));
+
+            var encryptedDateOnly = new ValueConverter<DateOnly?, string?>(
+                v => encryptor.Encrypt(v.HasValue ? v.Value.ToString("O", CultureInfo.InvariantCulture) : null),
+                v => ParseEncryptedDate(encryptor.Decrypt(v)));
+
             m.Entity<User>(b =>
             {
                 b.HasKey(u => u.Id);
@@ -21,8 +40,9 @@ namespace CoparentHub.Persistence.Data
 
                 b.HasIndex(u => u.Email).IsUnique();
                 b.Property(u => u.Email).HasMaxLength(256).IsRequired();
-                b.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
-                b.Property(u => u.LastName).HasMaxLength(100).IsRequired();
+
+                b.Property(u => u.FirstName).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+                b.Property(u => u.LastName).HasConversion(encryptedString).HasColumnType("text").IsRequired();
             });
 
             m.Entity<Family>(b =>
@@ -57,6 +77,13 @@ namespace CoparentHub.Persistence.Data
             {
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Id).ValueGeneratedNever();
+
+                b.HasIndex(x => new { x.FamilyId, x.UserId }).IsUnique();
+
+                b.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             m.Entity<Child>(b =>
@@ -64,22 +91,17 @@ namespace CoparentHub.Persistence.Data
                 b.HasKey(c => c.Id);
                 b.Property(c => c.Id).ValueGeneratedNever();
 
-                b.Property(c => c.Name)
-                    .HasMaxLength(100)
-                    .IsRequired();
+                b.Property(c => c.Name).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+                b.Property(c => c.DateOfBirth).HasConversion(encryptedDateOnly).HasColumnType("text");
             });
 
             m.Entity<ScheduledEvent>(b =>
             {
-                b.HasKey(e => e.Id);          
+                b.HasKey(e => e.Id);
                 b.Property(e => e.Id).ValueGeneratedNever();
 
-                b.Property(e => e.Title)
-                    .HasMaxLength(200)
-                    .IsRequired();
-
-                b.Property(e => e.Notes)
-                    .HasMaxLength(1000);
+                b.Property(e => e.Title).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+                b.Property(e => e.Notes).HasConversion(encryptedNullableString).HasColumnType("text");
 
                 b.Property(e => e.Type)
                     .HasConversion<string>();
@@ -107,6 +129,19 @@ namespace CoparentHub.Persistence.Data
 
                 b.HasIndex(a => new { a.EventId, a.UserId })
                     .IsUnique();
+            });
+
+            m.Entity<Notification>(b =>
+            {
+                b.HasKey(n => n.Id);
+                b.Property(n => n.Id).ValueGeneratedNever();
+
+                b.Property(n => n.Type)
+                    .HasConversion<string>();
+
+                b.Property(n => n.Message).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+
+                b.HasIndex(n => n.UserId);
             });
         }
     }

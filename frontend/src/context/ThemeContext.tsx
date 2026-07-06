@@ -1,22 +1,16 @@
-import { createContext, useContext, useState, useCallback, type FC, type ReactNode } from "react";
+import { createContext, useState, useCallback, type FC, type ReactNode } from "react";
 
 export type Theme = "light" | "dark" | "navy";
 
-interface ThemeContextValue {
+export interface ThemeContextValue {
   theme: Theme;
   setTheme: (t: Theme) => void;
   cycleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const CYCLE: Theme[] = ["light", "dark", "navy"];
-
-export const useTheme = (): ThemeContextValue => {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used inside <ThemeProvider>");
-  return ctx;
-};
 
 export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const stored = (localStorage.getItem("cp_theme") as Theme) ?? "light";

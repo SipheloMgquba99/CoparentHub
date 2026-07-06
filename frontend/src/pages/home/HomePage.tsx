@@ -4,7 +4,7 @@ import * as api from "../../api";
 import { EventRow, EventSheet } from "../../components/events";
 import { Ico, Icons } from "../../components/icons";
 import { PageSpinner } from "../../components/ui";
-import { calcAge } from "../../lib/utils";
+import { calcAge, toLocalDateString } from "../../lib/utils";
 
 interface HomePageProps {
   user: User;
@@ -19,7 +19,7 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
   const [busy, setBusy] = useState<boolean>(true);
   const [sheet, setSheet] = useState<boolean>(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateString(new Date());
 
   useEffect(() => {
     if (!family) {
@@ -52,7 +52,7 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
   const fn = user.fullName.split(" ")[0] ?? "there";
   const day = new Date().toLocaleDateString("en-US", { weekday: "long" });
   const date = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" });
-  const todayCount = evs.filter(e => e.startsAt.slice(0, 10) === today).length;
+  const todayCount = evs.filter(e => toLocalDateString(new Date(e.startsAt)) === today).length;
 
   return (
     <>
@@ -134,7 +134,7 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
                 className="btn btn-gh btn-sm"
                 onClick={() => setTab("fam")}
                 style={{
-                  color: "var(--navy-soft)",
+                  color: "var(--accent)",
                   fontSize: 12,
                   fontWeight: 600,
                 }}
@@ -152,11 +152,11 @@ const HomePage: FC<HomePageProps> = ({ user, family, setTab, refresh, onEventsCh
                 <div
                   className="av"
                   style={{
-                    background: "var(--navy-pale)",
-                    color: "var(--navy)",
+                    background: "var(--echild-bg)",
+                    color: "var(--echild-text)",
                   }}
                 >
-                  <Ico d={Icons.kid} size={16} stroke="var(--navy)" />
+                  <Ico d={Icons.kid} size={16} stroke="var(--echild-text)" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="mn">{c.name}</div>
