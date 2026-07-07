@@ -34,6 +34,9 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [inviteEmailErr, setInviteEmailErr] = useState("");
   const [sentExpiry, setSentExpiry] = useState("");
   const [inviteStatus, setInviteStatus] = useState<FamilyInviteStatus | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingFamily, setDeletingFamily] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
@@ -103,17 +106,17 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     }
   };
 
-  const handleDeleteFamily = async () => {
+  const confirmDeleteFamily = async () => {
     if (!family) return;
-    if (!confirm(
-      `Delete "${family.name}"? This permanently removes all children, events, and history for both co-parents. This cannot be undone.`
-    )) return;
+    setDeletingFamily(true); setDeleteErr("");
     try {
       await api.deleteFamily(family.id);
+      setShowDeleteConfirm(false);
       onFamChange();
     } catch (ex: unknown) {
-      alert(ex instanceof Error ? ex.message : "Failed to delete family.");
+      setDeleteErr(ex instanceof Error ? ex.message : "Failed to delete family.");
     }
+    setDeletingFamily(false);
   };
 
   const familySheet = mode && (mode === "create" || mode === "join") && (
@@ -218,7 +221,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
         </div>
         <button
           className="btn btn-gh btn-sm"
-          onClick={handleDeleteFamily}
+          onClick={() => { setDeleteErr(""); setShowDeleteConfirm(true); }}
           aria-label="Delete family"
           title="Delete family"
           style={{ color: "var(--danger)", gap: 4 }}
@@ -361,6 +364,47 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
                 {busy ? <Spinner /> : "Add Child"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="ov" onClick={e => e.target === e.currentTarget && !deletingFamily && setShowDeleteConfirm(false)}>
+          <div className="sh">
+            <div className="shdrag" />
+            <div className="shhead">
+              <div className="shtitle" style={{ color: "var(--danger)" }}>Delete Family</div>
+              <button type="button" className="shclose" onClick={() => setShowDeleteConfirm(false)} disabled={deletingFamily} aria-label="Close">
+                <Ico d={Icons.x} size={15} />
+              </button>
+            </div>
+            <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 8 }}>
+              Delete <strong>{family.name}</strong>?
+            </p>
+            <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 20 }}>
+              This permanently removes all children, events, and history for both co-parents. This cannot be undone.
+            </p>
+            {deleteErr && <div className="err">{deleteErr}</div>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-o"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deletingFamily}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={confirmDeleteFamily}
+                disabled={deletingFamily}
+                style={{ flex: 1, background: "var(--danger)", color: "#fff" }}
+              >
+                {deletingFamily ? <Spinner /> : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}
