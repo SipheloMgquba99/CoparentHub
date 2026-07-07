@@ -1,5 +1,5 @@
-import { useState, useEffect, type FC, type FormEvent } from "react";
-import type { User, Family, FamilyInvite } from "../../types";
+import { useState, type FC, type FormEvent } from "react";
+import type { User, Family } from "../../types";
 import * as api from "../../api";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
@@ -28,72 +28,29 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [dob, setDob] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [invite, setInvite] = useState<FamilyInvite | null>(null);
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const [inviteErr, setInviteErr] = useState("");
   const [inviteEmailInput, setInviteEmailInput] = useState("");
   const [sendingInviteEmail, setSendingInviteEmail] = useState(false);
   const [inviteEmailSent, setInviteEmailSent] = useState(false);
   const [inviteEmailErr, setInviteEmailErr] = useState("");
+  const [sentExpiry, setSentExpiry] = useState("");
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
-
-  useEffect(() => {
-    if (!family || familyFull) { setInvite(null); return; }
-    let cancelled = false;
-    setInviteLoading(true);
-    api.getActiveFamilyInvite(family.id)
-      .then(inv => { if (!cancelled) setInvite(inv); })
-      .catch(() => { if (!cancelled) setInvite(null); })
-      .finally(() => { if (!cancelled) setInviteLoading(false); });
-    return () => { cancelled = true; };
-  }, [family?.id, familyFull]);
-
-  const handleGenerateInvite = async () => {
-    if (!family) return;
-    setInviteLoading(true); setInviteErr("");
-    try {
-      setInvite(await api.createFamilyInvite(family.id));
-    } catch (ex: unknown) {
-      setInviteErr(ex instanceof Error ? ex.message : "Failed to generate invite code.");
-    }
-    setInviteLoading(false);
-  };
 
   const handleSendInviteEmail = async (e: FormEvent) => {
     e.preventDefault();
     if (!family || !inviteEmailInput.trim()) return;
     setSendingInviteEmail(true); setInviteEmailErr(""); setInviteEmailSent(false);
     try {
-      setInvite(await api.sendFamilyInviteEmail(family.id, inviteEmailInput.trim()));
+      const invite = await api.sendFamilyInviteEmail(family.id, inviteEmailInput.trim());
+      setSentExpiry(formatExpiry(invite.expiresAt));
       setInviteEmailSent(true);
       setInviteEmailInput("");
-      setTimeout(() => setInviteEmailSent(false), 4000);
+      setTimeout(() => setInviteEmailSent(false), 5000);
     } catch (ex: unknown) {
       setInviteEmailErr(ex instanceof Error ? ex.message : "Failed to send invite email.");
     }
     setSendingInviteEmail(false);
-  };
-
-  const copyInviteCode = () => {
-    if (!invite) return;
-    navigator.clipboard?.writeText(invite.code);
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
-
-  const emailInvite = () => {
-    if (!invite || !family) return;
-    const subject = `Join ${family.name} on CoParentHub`;
-    const body =
-      `Hi,\n\nI'd like to add you as a co-parent on CoParentHub for ${family.name}.\n\n` +
-      `1. Go to ${window.location.origin}\n` +
-      `2. Create an account (or sign in)\n` +
-      `3. Choose "Join Family" and enter this invite code: ${invite.code}\n\n` +
-      `This code ${formatExpiry(invite.expiresAt).toLowerCase()}.`;
-    window.location.href =
-      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const handleFamilySubmit = async (e: FormEvent) => {
@@ -243,84 +200,38 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
           </div>
         ) : (
           <>
-            <div>
-              <div className="fidlbl">Invite Code — share to invite</div>
-              {invite ? (
-                <>
-                  <div className="fidval">{invite.code}</div>
-                  <div className="fidexp">{formatExpiry(invite.expiresAt)}</div>
-                </>
-              ) : (
-                <div className="fidexp">{inviteLoading ? "Loading…" : "No active code yet"}</div>
-              )}
-              {inviteErr && <div className="fidexp" style={{ color: "var(--danger)" }}>{inviteErr}</div>}
-            </div>
-            <div className="fidbtns">
-              {invite && (
-                <button
-                  className="btn btn-sm"
-                  onClick={copyInviteCode}
-                  aria-label="Copy invite code to clipboard"
-                  style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
-                >
-                  {copied
-                    ? <><Ico d={Icons.ok} size={13} />Copied!</>
-                    : <><Ico d={Icons.copy} size={13} />Copy</>
-                  }
-                </button>
-              )}
-              {invite && (
-                <button
-                  className="btn btn-sm"
-                  onClick={emailInvite}
-                  aria-label="Share invite code via email"
-                  style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
-                >
-                  <Ico d={Icons.mail} size={13} />Email
-                </button>
-              )}
-              <button
-                className="btn btn-sm"
-                onClick={handleGenerateInvite}
-                disabled={inviteLoading}
-                style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
-              >
-                {inviteLoading ? <Spinner /> : invite ? "Regenerate" : "Generate"}
-              </button>
-            </div>
+            <div className="fidlbl">Invite a co-parent</div>
+            <div className="fidexp fid-hint">They'll get an email with a link to join {family.name}.</div>
 
-            <form
-              onSubmit={handleSendInviteEmail}
-              style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}
-            >
+            <form onSubmit={handleSendInviteEmail} className="fid-email-row">
               <input
                 type="email"
+                className="fid-email-input"
                 value={inviteEmailInput}
                 onChange={e => setInviteEmailInput(e.target.value)}
                 placeholder="Co-parent's email address"
+                disabled={sendingInviteEmail}
                 required
-                style={{
-                  flex: 1, minWidth: 0, padding: "9px 12px", borderRadius: 8,
-                  border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)",
-                  color: "#fff", fontSize: 13,
-                }}
               />
               <button
-                className="btn btn-sm"
+                className="btn btn-sm fid-send-btn"
                 type="submit"
                 disabled={sendingInviteEmail || !inviteEmailInput.trim()}
-                style={{ background: "var(--gold)", color: "#1f2937", border: "none", gap: 5, fontWeight: 700, width: "auto", flexShrink: 0 }}
               >
-                {sendingInviteEmail ? <Spinner dark /> : "Send Invite"}
+                {sendingInviteEmail
+                  ? <><Spinner dark /> Sending invite…</>
+                  : <><Ico d={Icons.mail} size={13} />Send Invite</>
+                }
               </button>
             </form>
+
             {inviteEmailSent && (
-              <div className="fidexp" style={{ color: "var(--gold)", marginTop: 6 }}>
-                <Ico d={Icons.ok} size={12} /> Invite email sent!
+              <div className="fid-msg fid-msg-ok">
+                <Ico d={Icons.ok} size={12} /> Invite sent — {sentExpiry.toLowerCase()}.
               </div>
             )}
             {inviteEmailErr && (
-              <div className="fidexp" style={{ color: "var(--danger)", marginTop: 6 }}>{inviteEmailErr}</div>
+              <div className="fid-msg fid-msg-err">{inviteEmailErr}</div>
             )}
           </>
         )}
@@ -409,8 +320,6 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     </>)}
 
     {familySheet}
-
-    {copied && <div className="toast">✓ Invite code copied to clipboard!</div>}
   </>);
 };
 

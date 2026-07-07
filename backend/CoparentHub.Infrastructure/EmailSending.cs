@@ -21,7 +21,7 @@ namespace CoparentHub.Infrastructure
         {
             var senderEmail = config["Brevo:SenderEmail"]!;
             var senderName = config["Brevo:SenderName"];
-            if (string.IsNullOrWhiteSpace(senderName)) senderName = "CoParentHub";
+            if (string.IsNullOrWhiteSpace(senderName)) senderName = "coparenthub";
 
             var appUrl = config["Cors:AllowedOrigins:0"];
             if (string.IsNullOrWhiteSpace(appUrl)) appUrl = "https://app.coparenthub.com";
@@ -30,7 +30,7 @@ namespace CoparentHub.Infrastructure
             {
                 sender = new { name = senderName, email = senderEmail },
                 to = new[] { new { email = toEmail } },
-                subject = $"{inviterFullName} invited you to join {familyName} on CoParentHub",
+                subject = $"{inviterFullName} invited you to join {familyName} on coparenthub",
                 htmlContent = BuildHtml(familyName, inviterFullName, code, expiresAt, appUrl),
             };
 
@@ -48,16 +48,16 @@ namespace CoparentHub.Infrastructure
                     <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
                       <tr>
                         <td style="background-color:#1f2937;padding:28px 32px;text-align:center;">
-                          <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f4c95d;font-weight:bold;letter-spacing:0.5px;">CoParentHub</span>
+                          <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f4c95d;font-weight:bold;letter-spacing:0.5px;">coparenthub</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding:32px;font-family:Arial,Helvetica,sans-serif;">
                           <p style="margin:0 0 16px;font-size:16px;color:#1f2937;">
-                            <strong>{inviterFullName}</strong> invited you to join <strong>{familyName}</strong> as a co-parent on CoParentHub.
+                            <strong>{inviterFullName}</strong> invited you to join <strong>{familyName}</strong> as a co-parent on coparenthub.
                           </p>
                           <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.5;">
-                            CoParentHub helps separated and co-parenting families share schedules, events, and updates about their kids in one place.
+                            coparenthub helps separated and co-parenting families share schedules, events, and updates about their kids in one place.
                           </p>
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                             <tr>
@@ -70,7 +70,7 @@ namespace CoparentHub.Infrastructure
                           <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
                             <tr>
                               <td align="center" style="border-radius:8px;background-color:#f4c95d;">
-                                <a href="{appUrl}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:bold;color:#1f2937;text-decoration:none;">Open CoParentHub</a>
+                                <a href="{appUrl}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:bold;color:#1f2937;text-decoration:none;">Open coparenthub</a>
                               </td>
                             </tr>
                           </table>

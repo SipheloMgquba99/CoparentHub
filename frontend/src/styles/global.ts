@@ -437,7 +437,7 @@ button, [role="button"] { touch-action: manipulation; }
 .fidbox {
   background: var(--fidbox-bg);
   border-radius: var(--r); padding: 16px 18px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column;
   margin-bottom: 12px; box-shadow: var(--shadow);
 }
 .fidlbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.4); margin-bottom: 5px; font-weight: 600; }
@@ -445,6 +445,20 @@ button, [role="button"] { touch-action: manipulation; }
 .fidexp { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 4px; }
 .fidbtns { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
 .fidfull { font-size: 13px; color: rgba(255,255,255,.85); line-height: 1.4; }
+.fid-hint { margin-bottom: 12px; }
+.fid-email-row { display: flex; gap: 8px; }
+.fid-email-input {
+  flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--rs);
+  border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08);
+  color: #fff; font-size: 13.5px;
+}
+.fid-email-input::placeholder { color: rgba(255,255,255,.4); }
+.fid-email-input:focus { outline: none; border-color: var(--gold); background: rgba(255,255,255,.12); }
+.fid-email-input:disabled { opacity: .6; }
+.fid-send-btn { background: var(--gold); color: #1f2937; border: none; font-weight: 700; flex-shrink: 0; }
+.fid-msg { display: flex; align-items: center; gap: 5px; font-size: 12px; margin-top: 8px; }
+.fid-msg-ok { color: var(--gold); }
+.fid-msg-err { color: var(--danger); }
 
 /* ── BOTTOM SHEET ── */
 .ov {
@@ -591,6 +605,8 @@ button, [role="button"] { touch-action: manipulation; }
   .topbar-right { gap: 6px; }
   .fswitch-btn { max-width: 92px; padding: 0 9px; }
   .theme-btn, .tav { width: 30px; height: 30px; }
+  .fid-email-row { flex-direction: column; }
+  .fid-send-btn { width: 100%; }
 }
 
 /* ═══════════════════════════════════════════════════
