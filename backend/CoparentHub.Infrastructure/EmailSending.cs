@@ -21,7 +21,7 @@ namespace CoparentHub.Infrastructure
         {
             var senderEmail = config["Brevo:SenderEmail"]!;
             var senderName = config["Brevo:SenderName"];
-            if (string.IsNullOrWhiteSpace(senderName)) senderName = "coparenthub";
+            if (string.IsNullOrWhiteSpace(senderName)) senderName = "Coparenthub";
 
             var appUrl = config["Cors:AllowedOrigins:0"];
             if (string.IsNullOrWhiteSpace(appUrl)) appUrl = "https://app.coparenthub.com";
@@ -67,10 +67,16 @@ namespace CoparentHub.Infrastructure
                               </td>
                             </tr>
                           </table>
-                          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                             <tr>
-                              <td align="center" style="border-radius:8px;background-color:#f4c95d;">
-                                <a href="{appUrl}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:bold;color:#1f2937;text-decoration:none;">Open coparenthub</a>
+                              <td align="center">
+                                <table role="presentation" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td align="center" style="border-radius:8px;background-color:#f4c95d;">
+                                      <a href="{appUrl}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:bold;color:#1f2937;text-decoration:none;">Open coparenthub</a>
+                                    </td>
+                                  </tr>
+                                </table>
                               </td>
                             </tr>
                           </table>

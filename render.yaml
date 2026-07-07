@@ -37,7 +37,7 @@ services:
       - key: Brevo__SenderEmail
         sync: false
       - key: Brevo__SenderName
-        value: CoParentHub
+        value: CoparentHub
 
   # Frontend — static site (free, unlimited, not counted against web-service instance hours).
   - name: coparenthub-web
