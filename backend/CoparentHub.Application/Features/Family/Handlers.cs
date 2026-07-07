@@ -27,6 +27,30 @@ namespace CoparentHub.Application.Features.Family
         }
     }
 
+    public class DeleteFamilyHandler(IUnitOfWork uow, IEventCacheVersion cacheVersion)
+        : IRequestHandler<DeleteFamilyCommand, Result<Guid>>
+    {
+        public async Task<Result<Guid>> Handle(DeleteFamilyCommand cmd, CancellationToken ct)
+        {
+            var family = await uow.Families.GetByIdAsync(cmd.FamilyId, ct);
+
+            if (family is null)
+                return Result<Guid>.Fail("Family not found.");
+
+            if (!family.IsMember(cmd.UserId))
+                return Result<Guid>.Fail("Access denied.");
+
+            await uow.Events.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
+            await uow.Notifications.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
+
+            uow.Families.Remove(family);
+            await uow.SaveAsync(ct);
+            cacheVersion.Bump(cmd.FamilyId);
+
+            return Result<Guid>.Ok(cmd.FamilyId);
+        }
+    }
+
     public class JoinFamilyByCodeHandler(IUnitOfWork uow)
         : IRequestHandler<JoinFamilyByCodeCommand, Result<Guid>>
     {

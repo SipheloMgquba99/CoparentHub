@@ -42,6 +42,7 @@ namespace CoparentHub.Infrastructure.Repositories
         }
 
         public void Add(Family family) => db.Families.Add(family);
+        public void Remove(Family family) => db.Families.Remove(family);
     }
 
     public class EventRepository(AppDbContext db) : IEventRepository
@@ -77,6 +78,13 @@ namespace CoparentHub.Infrastructure.Repositories
         }
 
         public void Add(ScheduledEvent ev) => db.Events.Add(ev);
+
+        // Bulk delete: Events/Notifications carry a plain FamilyId column (no DB-level FK to
+        // Family, unlike Members/Children/Invites which cascade automatically), so a family
+        // deletion must explicitly clear these out itself. ExecuteDeleteAsync still lets the
+        // DB-level Attendance -> Event cascade fire for each row it removes.
+        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            await db.Events.Where(e => e.FamilyId == familyId).ExecuteDeleteAsync(ct);
     }
 
     public class NotificationRepository(AppDbContext db) : INotificationRepository
@@ -91,6 +99,9 @@ namespace CoparentHub.Infrastructure.Repositories
                 .ToListAsync(ct);
 
         public void Add(Notification notification) => db.Notifications.Add(notification);
+
+        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            await db.Notifications.Where(n => n.FamilyId == familyId).ExecuteDeleteAsync(ct);
     }
 
     public class FamilyInviteRepository(AppDbContext db) : IFamilyInviteRepository

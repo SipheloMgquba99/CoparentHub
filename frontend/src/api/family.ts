@@ -27,6 +27,14 @@ export function createFamily(req: CreateFamilyRequest): Promise<string> {
   return request<string>("POST", "/family", req);
 }
 
+export function deleteFamily(familyId: string): Promise<string> {
+  if (!familyId) {
+    return Promise.reject(new Error("familyId is required"));
+  }
+
+  return request<string>("DELETE", `/family/${familyId}`);
+}
+
 export function joinFamilyByCode(code: string): Promise<string> {
   if (!code) {
     return Promise.reject(new Error("Invite code is required"));

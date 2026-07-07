@@ -9,6 +9,11 @@ namespace CoparentHub.Application.Features.Family
       Guid UserId
   ) : IRequest<Result<Guid>>;
 
+    public record DeleteFamilyCommand(
+        Guid FamilyId,
+        Guid UserId
+    ) : IRequest<Result<Guid>>;
+
     public record JoinFamilyByCodeCommand(
         string Code,
         Guid UserId

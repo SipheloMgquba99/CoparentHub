@@ -27,6 +27,10 @@ namespace CoparentHub.Api.Controllers
         public async Task<IActionResult> Join([FromBody] JoinFamilyRequest req, CancellationToken ct)
             => ToResponse(await sender.Send(new JoinFamilyByCodeCommand(req.Code, CurrentUserId), ct));
 
+        [HttpDelete("{familyId:guid}")]
+        public async Task<IActionResult> Delete(Guid familyId, CancellationToken ct)
+            => ToResponse(await sender.Send(new DeleteFamilyCommand(familyId, CurrentUserId), ct));
+
         [HttpPost("{familyId:guid}/invites")]
         public async Task<IActionResult> CreateInvite(Guid familyId, CancellationToken ct)
             => ToResponse(await sender.Send(new CreateFamilyInviteCommand(familyId, CurrentUserId), ct));

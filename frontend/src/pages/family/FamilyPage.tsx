@@ -93,8 +93,6 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     }
     setBusy(false);
   };
-
-  // ── Remove Child ───────────────────────────────────────────────────────
   const handleRemoveChild = async (childId: string) => {
     if (!confirm("Remove this child from the family?")) return;
     try {
@@ -102,6 +100,19 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
       onFamChange();
     } catch (ex: unknown) {
       alert(ex instanceof Error ? ex.message : "Failed to remove child.");
+    }
+  };
+
+  const handleDeleteFamily = async () => {
+    if (!family) return;
+    if (!confirm(
+      `Delete "${family.name}"? This permanently removes all children, events, and history for both co-parents. This cannot be undone.`
+    )) return;
+    try {
+      await api.deleteFamily(family.id);
+      onFamChange();
+    } catch (ex: unknown) {
+      alert(ex instanceof Error ? ex.message : "Failed to delete family.");
     }
   };
 
@@ -198,10 +209,23 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     </div>
 
     {family && (<>
-      <div style={{ fontFamily: "'Fraunces',serif", fontSize: 24, color: "var(--text)", marginBottom: 2 }}>
-        {family.name}
+      <div className="ch" style={{ marginBottom: 18 }}>
+        <div>
+          <div style={{ fontFamily: "'Fraunces',serif", fontSize: 24, color: "var(--text)", marginBottom: 2 }}>
+            {family.name}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--muted)" }}>Family Group</div>
+        </div>
+        <button
+          className="btn btn-gh btn-sm"
+          onClick={handleDeleteFamily}
+          aria-label="Delete family"
+          title="Delete family"
+          style={{ color: "var(--danger)", gap: 4 }}
+        >
+          <Ico d={Icons.trash} size={13} />Delete
+        </button>
       </div>
-      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 18 }}>Family Group</div>
 
       <div className="fidbox">
         {familyFull ? (

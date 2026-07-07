@@ -44,5 +44,8 @@ namespace CoparentHub.Infrastructure.Caching
         }
 
         public void Add(ScheduledEvent ev) => inner.Add(ev);
+
+        public Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            inner.DeleteAllForFamilyAsync(familyId, ct);
     }
 }

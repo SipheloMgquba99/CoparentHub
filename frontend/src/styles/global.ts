@@ -506,7 +506,7 @@ button, [role="button"] { touch-action: manipulation; }
 }
 .spind { background: conic-gradient(from 0deg, transparent 0%, transparent 65%, var(--accent) 100%); }
 @keyframes rot { to { transform: rotate(360deg); } }
-.page-spinner { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; gap: 12px; }
+.page-spinner { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; gap: 12px; animation: fadeIn .3s ease; }
 .page-spinner .spin { width: 28px; height: 28px; }
 .page-spinner-label { font-size: 13px; color: var(--muted); text-align: center; max-width: 260px; line-height: 1.5; }
 
