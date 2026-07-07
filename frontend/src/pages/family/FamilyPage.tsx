@@ -64,6 +64,19 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
+  const emailInvite = () => {
+    if (!invite || !family) return;
+    const subject = `Join ${family.name} on CoParentHub`;
+    const body =
+      `Hi,\n\nI'd like to add you as a co-parent on CoParentHub for ${family.name}.\n\n` +
+      `1. Go to ${window.location.origin}\n` +
+      `2. Create an account (or sign in)\n` +
+      `3. Choose "Join Family" and enter this invite code: ${invite.code}\n\n` +
+      `This code ${formatExpiry(invite.expiresAt).toLowerCase()}.`;
+    window.location.href =
+      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   const handleFamilySubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
@@ -235,6 +248,16 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
                     ? <><Ico d={Icons.ok} size={13} />Copied!</>
                     : <><Ico d={Icons.copy} size={13} />Copy</>
                   }
+                </button>
+              )}
+              {invite && (
+                <button
+                  className="btn btn-sm"
+                  onClick={emailInvite}
+                  aria-label="Share invite code via email"
+                  style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", gap: 5, fontWeight: 600 }}
+                >
+                  <Ico d={Icons.mail} size={13} />Email
                 </button>
               )}
               <button

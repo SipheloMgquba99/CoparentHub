@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FC } from "react";
+import { useState, useEffect, useCallback, useRef, type FC } from "react";
 import type { Family, AppNotification } from "./types";
 import { CSS } from "./styles/global";
 import { Shell } from "./components/layout";
@@ -12,6 +12,7 @@ import SchedPage from "./pages/schedule/SchedulePage";
 import FamPage from "./pages/family/FamilyPage";
 import AuthPage from "./pages/auth/AuthPage";
 import * as api from "./api";
+import { PageSpinner } from "./components/ui";
 
 const NOTIFICATIONS_POLL_MS = 15_000;
 
@@ -26,6 +27,7 @@ const Inner: FC = () => {
   const [activeFamilyId, setActiveFamilyIdState] = useState<string | null>(null);
   const [loadingFamilies, setLoadingFamilies] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const isFirstFamiliesLoadRef = useRef(true);
 
   const onEventsChanged = () => setRefresh((n) => n + 1);
 
@@ -46,11 +48,14 @@ const Inner: FC = () => {
       setFamilies([]);
       setActiveFamilyIdState(null);
       setLoadingFamilies(false);
+      isFirstFamiliesLoadRef.current = true;
       return;
     }
 
     let isMounted = true;
-    setLoadingFamilies(true);
+    if (isFirstFamiliesLoadRef.current) {
+      setLoadingFamilies(true);
+    }
 
     api.getMyFamilies()
       .then((list) => {
@@ -73,7 +78,10 @@ const Inner: FC = () => {
         if (isMounted) setFamilies([]);
       })
       .finally(() => {
-        if (isMounted) setLoadingFamilies(false);
+        if (isMounted) {
+          setLoadingFamilies(false);
+          isFirstFamiliesLoadRef.current = false;
+        }
       });
 
     return () => {
@@ -122,7 +130,7 @@ const Inner: FC = () => {
       onSelectFamily={setActiveFamilyId}
     >
       {loadingFamilies ? (
-        <div style={{ padding: 20 }}>Loading families...</div>
+        <PageSpinner />
       ) : tab === "home" ? (
         <HomePage
           user={user}
@@ -155,7 +163,7 @@ const AppContent: FC = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading...</div>;
+    return <PageSpinner />;
   }
 
   if (!user) {
