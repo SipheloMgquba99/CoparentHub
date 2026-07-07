@@ -19,6 +19,12 @@ namespace CoparentHub.Application.Features.Family
             RuleFor(x => x.Name)
                 .NotEmpty()
                 .MaximumLength(100);
+
+            RuleFor(x => x.DateOfBirth)
+                .Must(dob => !dob.HasValue || dob.Value <= DateOnly.FromDateTime(DateTime.UtcNow))
+                    .WithMessage("Date of birth cannot be in the future.")
+                .Must(dob => !dob.HasValue || dob.Value >= DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-100))
+                    .WithMessage("Date of birth must be within the last 100 years.");
         }
     }
 

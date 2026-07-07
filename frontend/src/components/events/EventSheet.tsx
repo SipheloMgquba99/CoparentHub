@@ -35,6 +35,11 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setErr("");
+
+    if (!cid) { setErr("Please select a child."); return; }
+    if (!sa) { setErr("Please select a start date & time."); return; }
+    if (ea && new Date(ea) <= new Date(sa)) { setErr("End time must be after the start time."); return; }
+
     setBusy(true);
     try {
       await onSubmit({
@@ -66,7 +71,8 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
 
           <div className="f">
             <label>For Child</label>
-            <select value={cid} onChange={e => setCid(e.target.value)}>
+            <select value={cid} onChange={e => setCid(e.target.value)} required disabled={children.length === 0}>
+              <option value="" disabled>-- Select Child --</option>
               {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -88,12 +94,26 @@ export const EventSheet: FC<EventSheetProps> = ({ children, onSubmit, onClose, e
           </div>
           <div className="f">
             <label>Starts</label>
-            <input type="datetime-local" value={sa} onChange={e => setSa(e.target.value)} required />
+            <div className="fw">
+              <input type="datetime-local" value={sa} onChange={e => setSa(e.target.value)} required />
+              {!sa && (
+                <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: 14, pointerEvents: "none" }}>
+                  -- Select Start --
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="f">
             <label>Ends <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--muted)", fontSize: 11 }}>(optional)</span></label>
-            <input type="datetime-local" value={ea} onChange={e => setEa(e.target.value)} />
+            <div className="fw">
+              <input type="datetime-local" value={ea} onChange={e => setEa(e.target.value)} min={sa || undefined} />
+              {!ea && (
+                <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: 14, pointerEvents: "none" }}>
+                  -- No End Time --
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="f">

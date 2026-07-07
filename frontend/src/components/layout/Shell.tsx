@@ -33,7 +33,15 @@ export const Shell: FC<ShellProps> = ({ user, tab, setTab, onLogout, notificatio
   return (
     <div className="shell">
       <div className="topbar">
-        <div className="tlogo">Coparent<em>Hub</em></div>
+        <button
+          type="button"
+          className="tlogo"
+          onClick={() => setTab("home")}
+          aria-label="Go to Home"
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+        >
+          Coparent<em>Hub</em>
+        </button>
         <div className="topbar-right">
           <FamilySwitcher
             families={families}

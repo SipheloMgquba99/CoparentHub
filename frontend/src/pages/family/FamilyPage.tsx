@@ -86,7 +86,18 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   };
 
   const handleAddChild = async (e: FormEvent) => {
-    e.preventDefault(); setErr(""); setBusy(true);
+    e.preventDefault(); setErr("");
+
+    if (dob) {
+      const dobDate = new Date(dob + "T00:00:00");
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const hundredYearsAgo = new Date(); hundredYearsAgo.setFullYear(today.getFullYear() - 100); hundredYearsAgo.setHours(0, 0, 0, 0);
+
+      if (dobDate > today) { setErr("Date of birth cannot be in the future."); return; }
+      if (dobDate < hundredYearsAgo) { setErr("Date of birth must be within the last 100 years."); return; }
+    }
+
+    setBusy(true);
     try {
       await api.addChild(family!.id, { name: cname, dateOfBirth: dob || null });
       onFamChange();
@@ -358,7 +369,25 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
               </div>
               <div className="f">
                 <label>Date of Birth</label>
-                <input type="date" value={dob} onChange={e => setDob(e.target.value)} max={toLocalDateString(new Date())} />
+                <div className="fw">
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={e => setDob(e.target.value)}
+                    min={toLocalDateString(new Date(new Date().setFullYear(new Date().getFullYear() - 100)))}
+                    max={toLocalDateString(new Date())}
+                  />
+                  {!dob && (
+                    <span
+                      style={{
+                        position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
+                        color: "var(--muted)", fontSize: 14, pointerEvents: "none",
+                      }}
+                    >
+                      -- Select DOB --
+                    </span>
+                  )}
+                </div>
               </div>
               <button className="btn btn-p" type="submit" disabled={busy}>
                 {busy ? <Spinner /> : "Add Child"}
