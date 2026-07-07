@@ -6,6 +6,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { useTheme } from "./context/useTheme";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/useAuth";
+import { Ico, Icons } from "./components/icons";
 
 import HomePage from "./pages/home/HomePage";
 import SchedPage from "./pages/schedule/SchedulePage";
@@ -33,6 +34,7 @@ const Inner: FC = () => {
   const [dismissedPendingInvite, setDismissedPendingInvite] = useState(false);
   const [joiningPending, setJoiningPending] = useState(false);
   const [pendingJoinErr, setPendingJoinErr] = useState("");
+  const [joinedToast, setJoinedToast] = useState<string | null>(null);
 
   const onEventsChanged = () => setRefresh((n) => n + 1);
 
@@ -109,9 +111,20 @@ const Inner: FC = () => {
     if (!pendingInvite) return;
     setJoiningPending(true); setPendingJoinErr("");
     try {
+      const familyName = pendingInvite.familyName;
       const familyId = await api.joinFamilyByCode(pendingInvite.code);
+
+      // Wait for the fresh family list here (rather than just bumping `refresh` and hoping
+      // the background effect catches up) so the modal only closes once the newly-joined
+      // family is actually visible — otherwise, under a slow/cold-started API, the user sees
+      // the modal vanish with nothing else changing and no sense of whether it worked.
+      const list = await api.getMyFamilies();
+      setFamilies(list);
+      setActiveFamilyId(familyId);
+      setTab("fam");
       setPendingInvite(null);
-      onFamChange(familyId);
+      setJoinedToast(`You've joined ${familyName}!`);
+      setTimeout(() => setJoinedToast(null), 4000);
     } catch (ex: unknown) {
       setPendingJoinErr(ex instanceof Error ? ex.message : "Failed to join family.");
     }
@@ -191,6 +204,15 @@ const Inner: FC = () => {
             <div className="shdrag" />
             <div className="shhead">
               <div className="shtitle">You're Invited!</div>
+              <button
+                type="button"
+                className="shclose"
+                onClick={() => setDismissedPendingInvite(true)}
+                disabled={joiningPending}
+                aria-label="Close"
+              >
+                <Ico d={Icons.x} size={15} />
+              </button>
             </div>
             <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 20 }}>
               You've been invited to join <strong>{pendingInvite.familyName}</strong> as a co-parent on coparenthub.
@@ -219,6 +241,8 @@ const Inner: FC = () => {
           </div>
         </div>
       )}
+
+      {joinedToast && <div className="toast">✓ {joinedToast}</div>}
     </>
   );
 };
