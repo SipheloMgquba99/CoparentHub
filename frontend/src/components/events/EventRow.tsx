@@ -10,9 +10,10 @@ interface EventRowProps {
   onCancel?: (id: string) => void;
   onRsvp?:   (id: string, status: AttendanceStatus, reason?: string) => void;
   compact?: boolean;
+  rsvpDisabled?: boolean;
 }
 
-export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRsvp, compact }) => {
+export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRsvp, compact, rsvpDisabled }) => {
   const [declining, setDeclining] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
 
@@ -106,6 +107,7 @@ export const EventRow: FC<EventRowProps> = ({ ev, userId, onEdit, onCancel, onRs
                 key={s}
                 className={`rb ${my?.status === s ? `r${RSVP_CODE[s]}` : ""}`}
                 onClick={() => handleRsvpClick(s)}
+                disabled={rsvpDisabled}
               >
                 {s}
               </button>

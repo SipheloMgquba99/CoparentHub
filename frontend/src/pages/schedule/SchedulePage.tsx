@@ -21,8 +21,6 @@ const getMonday = (): string => {
   d.setDate(d.getDate() - d.getDay());
   return toLocalDateString(d);
 };
-
-// Safe date formatter
 const fmt = (s?: string) => {
   if (!s) return "...";
   const d = new Date(s + "T00:00:00");
@@ -37,6 +35,7 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
   const [edit, setEdit] = useState<ScheduledEvent | null>(null);
   const [add, setAdd] = useState<boolean>(false);
   const [tick, setTick] = useState<number>(0);
+  const [rsvpBusyId, setRsvpBusyId] = useState<string | null>(null);
   const silentRef = useRef(false);
 
   useEffect(() => {
@@ -76,9 +75,14 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
   };
 
   const handleRsvp = async (eventId: string, status: AttendanceStatus, reason?: string) => {
-    if (!family) return;
-    await api.rsvp(family.id, eventId, { status, reason });
-    setTick(t => t + 1);
+    if (!family || rsvpBusyId === eventId) return;
+    setRsvpBusyId(eventId);
+    try {
+      await api.rsvp(family.id, eventId, { status, reason });
+      setTick(t => t + 1);
+    } finally {
+      setRsvpBusyId(null);
+    }
   };
 
   const done = () => {
@@ -141,6 +145,7 @@ const SchedPage: FC<SchedPageProps> = ({ user, family, refresh, onEventsChanged 
                     onEdit={setEdit}
                     onCancel={handleCancel}
                     onRsvp={handleRsvp}
+                    rsvpDisabled={rsvpBusyId === e.id}
                   />
                 ))
               }

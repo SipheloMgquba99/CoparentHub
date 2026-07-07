@@ -134,12 +134,14 @@ namespace CoparentHub.Application.Features.Events
             if (ev is null)
                 return Result<Guid>.Fail("Event not found.");
 
+            var previousStatus = ev.Attendances.FirstOrDefault(a => a.UserId == cmd.UserId)?.Status;
+
             var result = ev.Rsvp(cmd.UserId, cmd.Status, cmd.Reason);
 
             if (!result.IsSuccess)
                 return Result<Guid>.Fail(result.Error!);
 
-            if (ev.CreatedByUserId != cmd.UserId)
+            if (ev.CreatedByUserId != cmd.UserId && previousStatus != cmd.Status)
             {
                 var responder = await uow.Users.GetByIdAsync(cmd.UserId, ct);
                 var responderName = responder?.FullName ?? "Someone";
