@@ -15,6 +15,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import * as api from "./api";
 import { PageSpinner, Spinner } from "./components/ui";
+import { PushEnablePrompt } from "./components/PushEnablePrompt";
 
 const NOTIFICATIONS_POLL_MS = 15_000;
 
@@ -243,6 +244,8 @@ const Inner: FC = () => {
       )}
 
       {joinedToast && <div className="toast">✓ {joinedToast}</div>}
+
+      {(!pendingInvite || dismissedPendingInvite) && <PushEnablePrompt userId={user.id} />}
     </>
   );
 };

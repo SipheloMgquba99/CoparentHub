@@ -38,6 +38,19 @@ services:
         sync: false
       - key: Brevo__SenderName
         value: CoparentHub
+      # Web Push (VAPID) — generated once via VapidHelper.GenerateVapidKeys(), pasted in
+      # during Blueprint setup. Never regenerate in production, it invalidates every existing
+      # subscription. If left unset, the app falls back to a no-op sender and the
+      # enable-notifications prompt never appears.
+      - key: Vapid__PublicKey
+        sync: false
+      - key: Vapid__PrivateKey
+        sync: false
+      - key: Vapid__Subject
+        sync: false
+      # The one account allowed to send one-off push announcements.
+      - key: Admin__Email
+        sync: false
 
   # Frontend — static site (free, unlimited, not counted against web-service instance hours).
   - name: coparenthub-web

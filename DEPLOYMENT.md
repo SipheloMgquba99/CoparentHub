@@ -95,6 +95,26 @@ send a real, branded invite email, sign up for a free [Brevo](https://www.brevo.
 If you skip this, the app still works fine — the invite-by-email button just reports itself
 unavailable, and the existing code/copy flow keeps working.
 
+### Optional — push notifications
+
+Event reminders and one-off announcements only work if a VAPID key pair is configured. Generate
+one (no account/signup needed — this is just a cryptographic key pair, not a third-party
+service):
+
+```sh
+npx web-push generate-vapid-keys
+```
+
+Keep both the public and private key. `Subject` must be a `mailto:` address or an `https://`
+URL (e.g. `mailto:you@example.com`). **Never regenerate this key pair once real users have
+subscribed** — rotating it silently invalidates every existing subscription.
+
+Also decide which account should be allowed to send one-off announcements, and use that
+account's email as `Admin__Email`.
+
+If you skip this, the app still works fine — the enable-notifications prompt simply never
+appears, and there's no announcement endpoint to call.
+
 ## Step 3 — Deploy the Render Blueprint
 
 This repo includes `render.yaml`, which defines both services (`coparenthub-api` and
@@ -112,6 +132,8 @@ This repo includes `render.yaml`, which defines both services (`coparenthub-api`
    | `Cors__AllowedOrigins__0` (on `coparenthub-api`) | leave as a placeholder for now (e.g. `https://placeholder.onrender.com`) — fixed in Step 4 |
    | `Brevo__ApiKey` (on `coparenthub-api`) | the API key from the optional Brevo setup above — leave blank to skip email invites for now |
    | `Brevo__SenderEmail` (on `coparenthub-api`) | the sender email you verified in Brevo — leave blank to skip email invites for now |
+   | `Vapid__PublicKey` / `Vapid__PrivateKey` / `Vapid__Subject` (on `coparenthub-api`) | the key pair from the optional push-notifications setup above — leave blank to skip push notifications for now |
+   | `Admin__Email` (on `coparenthub-api`) | the account allowed to send push announcements — leave blank to skip for now |
    | `VITE_API_BASE_URL` (on `coparenthub-web`) | leave as a placeholder for now — fixed in Step 4 |
 
 4. Click **Apply**. Render builds and deploys both services. This takes a few minutes,

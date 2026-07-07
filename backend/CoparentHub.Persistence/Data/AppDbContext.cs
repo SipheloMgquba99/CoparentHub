@@ -17,6 +17,7 @@ namespace CoparentHub.Persistence.Data
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
         public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+        public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -181,6 +182,28 @@ namespace CoparentHub.Persistence.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 b.HasIndex(t => t.UserId);
+            });
+
+            m.Entity<PushSubscription>(b =>
+            {
+                b.HasKey(p => p.Id);
+                b.Property(p => p.Id).ValueGeneratedNever();
+
+                // Plaintext, unlike the other per-user string columns above: it needs a unique
+                // index and exact-value lookups (dedupe on subscribe, pruning on delivery
+                // failure), which this app's random-nonce field encryption can't support.
+                b.Property(p => p.Endpoint).HasMaxLength(1000).IsRequired();
+                b.HasIndex(p => p.Endpoint).IsUnique();
+
+                b.Property(p => p.P256dh).HasMaxLength(255).IsRequired();
+                b.Property(p => p.Auth).HasMaxLength(255).IsRequired();
+
+                b.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(p => p.UserId);
             });
         }
     }

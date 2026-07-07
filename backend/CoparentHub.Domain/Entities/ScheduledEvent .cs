@@ -42,6 +42,7 @@ namespace CoparentHub.Domain.Entities
         public DateTime StartsAt { get; private set; }
         public DateTime? EndsAt { get; private set; }
         public bool IsCancelled { get; private set; }
+        public bool ReminderSent { get; private set; }
 
         private readonly List<Attendance> _attendances = [];
         public IReadOnlyList<Attendance> Attendances => _attendances.AsReadOnly();
@@ -81,6 +82,8 @@ namespace CoparentHub.Domain.Entities
             StartsAt = DateTime.SpecifyKind(startsAt, DateTimeKind.Utc);
             EndsAt = endsAt.HasValue ? DateTime.SpecifyKind(endsAt.Value, DateTimeKind.Utc) : null;
             Notes = notes?.Trim();
+            // A rescheduled event should be eligible for a fresh reminder against its new time.
+            ReminderSent = false;
             return Result<ScheduledEvent>.Ok(this);
         }
 
@@ -90,6 +93,8 @@ namespace CoparentHub.Domain.Entities
             IsCancelled = true;
             return Result<ScheduledEvent>.Ok(this);
         }
+
+        public void MarkReminderSent() => ReminderSent = true;
 
         public Result<Attendance> Rsvp(Guid userId, AttendanceStatus status, string? reason)
         {

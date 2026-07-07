@@ -78,13 +78,13 @@ namespace CoparentHub.Infrastructure.Repositories
         }
 
         public void Add(ScheduledEvent ev) => db.Events.Add(ev);
-
-        // Bulk delete: Events/Notifications carry a plain FamilyId column (no DB-level FK to
-        // Family, unlike Members/Children/Invites which cascade automatically), so a family
-        // deletion must explicitly clear these out itself. ExecuteDeleteAsync still lets the
-        // DB-level Attendance -> Event cascade fire for each row it removes.
         public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
             await db.Events.Where(e => e.FamilyId == familyId).ExecuteDeleteAsync(ct);
+
+        public Task<List<ScheduledEvent>> GetStartingSoonAsync(DateTime notBefore, DateTime notAfter, CancellationToken ct = default) =>
+            db.Events.Include(e => e.Attendances)
+                .Where(e => !e.IsCancelled && !e.ReminderSent && e.StartsAt > notBefore && e.StartsAt <= notAfter)
+                .ToListAsync(ct);
     }
 
     public class NotificationRepository(AppDbContext db) : INotificationRepository
@@ -138,6 +138,23 @@ namespace CoparentHub.Infrastructure.Repositories
         public void Add(PasswordResetToken token) => db.PasswordResetTokens.Add(token);
     }
 
+    public class PushSubscriptionRepository(AppDbContext db) : IPushSubscriptionRepository
+    {
+        public Task<PushSubscription?> GetByEndpointAsync(string endpoint, CancellationToken ct = default) =>
+            db.PushSubscriptions.FirstOrDefaultAsync(p => p.Endpoint == endpoint, ct);
+
+        public Task<List<PushSubscription>> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+            db.PushSubscriptions.Where(p => p.UserId == userId).ToListAsync(ct);
+
+        public Task<List<PushSubscription>> GetAllAsync(CancellationToken ct = default) =>
+            db.PushSubscriptions.ToListAsync(ct);
+
+        public void Add(PushSubscription subscription) => db.PushSubscriptions.Add(subscription);
+
+        public async Task RemoveByEndpointAsync(string endpoint, CancellationToken ct = default) =>
+            await db.PushSubscriptions.Where(p => p.Endpoint == endpoint).ExecuteDeleteAsync(ct);
+    }
+
     public class UnitOfWork(
         AppDbContext db,
         IUserRepository users,
@@ -145,7 +162,8 @@ namespace CoparentHub.Infrastructure.Repositories
         IEventRepository events,
         INotificationRepository notifications,
         IFamilyInviteRepository invites,
-        IPasswordResetTokenRepository passwordResetTokens)
+        IPasswordResetTokenRepository passwordResetTokens,
+        IPushSubscriptionRepository pushSubscriptions)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -154,6 +172,7 @@ namespace CoparentHub.Infrastructure.Repositories
         public INotificationRepository Notifications { get; } = notifications;
         public IFamilyInviteRepository Invites { get; } = invites;
         public IPasswordResetTokenRepository PasswordResetTokens { get; } = passwordResetTokens;
+        public IPushSubscriptionRepository PushSubscriptions { get; } = pushSubscriptions;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
     }
 }

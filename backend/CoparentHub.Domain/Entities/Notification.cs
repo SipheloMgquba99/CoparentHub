@@ -6,7 +6,8 @@ namespace CoparentHub.Domain.Entities
     {
         EventRsvp,
         EventCreated,
-        EventCancelled
+        EventCancelled,
+        EventReminder
     }
 
     public class Notification : BaseEntity

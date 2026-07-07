@@ -44,6 +44,7 @@ namespace CoparentHub.Infrastructure
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IFamilyInviteRepository, FamilyInviteRepository>();
             services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+            services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
@@ -63,6 +64,20 @@ namespace CoparentHub.Infrastructure
             else
             {
                 services.AddSingleton<IEmailSender, NullEmailSender>();
+            }
+
+            var vapidConfigured =
+                !string.IsNullOrWhiteSpace(config["Vapid:PublicKey"]) &&
+                !string.IsNullOrWhiteSpace(config["Vapid:PrivateKey"]) &&
+                !string.IsNullOrWhiteSpace(config["Vapid:Subject"]);
+
+            if (vapidConfigured)
+            {
+                services.AddSingleton<IPushSender, WebPushSender>();
+            }
+            else
+            {
+                services.AddSingleton<IPushSender, NullPushSender>();
             }
 
             return services;

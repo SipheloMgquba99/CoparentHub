@@ -1,4 +1,4 @@
-export type NotificationType = "EventRsvp" | "EventCreated" | "EventCancelled";
+export type NotificationType = "EventRsvp" | "EventCreated" | "EventCancelled" | "EventReminder";
 
 export interface AppNotification {
   id: string;

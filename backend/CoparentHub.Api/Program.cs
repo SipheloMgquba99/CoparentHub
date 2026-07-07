@@ -90,6 +90,7 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuditLoggingB
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<CoparentHub.Infrastructure.BackgroundJobs.EventReminderBackgroundService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
