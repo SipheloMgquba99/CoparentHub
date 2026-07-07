@@ -19,6 +19,7 @@ export function getToken(): string | null {
 }
 
 interface ApiError {
+  error?: string;
   title?: string;
   detail?: string;
   errors?: Record<string, string[]>;
@@ -67,7 +68,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
     let message = `Request failed: ${res.status} ${res.statusText}`;
     try {
       const err: ApiError = await res.json();
-      message = err.detail ?? err.title ?? message;
+      message = err.error ?? err.detail ?? err.title ?? message;
       if (err.errors) {
         const flat = Object.values(err.errors).flat().join(" ");
         if (flat) message = flat;

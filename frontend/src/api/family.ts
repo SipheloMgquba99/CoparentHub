@@ -1,6 +1,7 @@
 import type {
   Family,
   FamilyInvite,
+  FamilyInviteStatus,
   AddChildRequest,
   CreateFamilyRequest,
 } from "../types";
@@ -60,6 +61,14 @@ export function sendFamilyInviteEmail(familyId: string, email: string): Promise<
   }
 
   return request<FamilyInvite>("POST", `/family/${familyId}/invites/email`, { email: email.trim() });
+}
+
+export function getFamilyInviteStatus(familyId: string): Promise<FamilyInviteStatus | null> {
+  if (!familyId) {
+    return Promise.reject(new Error("familyId is required"));
+  }
+
+  return request<FamilyInviteStatus | null>("GET", `/family/${familyId}/invites/status`);
 }
 
 export function addChild(

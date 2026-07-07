@@ -27,6 +27,11 @@ export interface FamilyInvite {
   expiresAt: string;
 }
 
+export interface FamilyInviteStatus {
+  expiresAt: string;
+  isExpired: boolean;
+}
+
 export interface AddChildRequest {
   name: string;
   dateOfBirth: string | null;

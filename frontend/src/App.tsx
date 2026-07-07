@@ -130,7 +130,7 @@ const Inner: FC = () => {
       onSelectFamily={setActiveFamilyId}
     >
       {loadingFamilies ? (
-        <PageSpinner />
+        <PageSpinner label="Waking up the server — this can take up to a minute if it's been idle." />
       ) : tab === "home" ? (
         <HomePage
           user={user}

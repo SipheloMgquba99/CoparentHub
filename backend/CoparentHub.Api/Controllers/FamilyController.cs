@@ -39,6 +39,10 @@ namespace CoparentHub.Api.Controllers
         public async Task<IActionResult> SendInviteEmail(Guid familyId, [FromBody] SendFamilyInviteEmailRequest req, CancellationToken ct)
             => ToResponse(await sender.Send(new SendFamilyInviteEmailCommand(familyId, CurrentUserId, req.Email), ct));
 
+        [HttpGet("{familyId:guid}/invites/status")]
+        public async Task<IActionResult> GetInviteStatus(Guid familyId, CancellationToken ct)
+            => ToResponse(await sender.Send(new GetFamilyInviteStatusQuery(familyId, CurrentUserId), ct));
+
         [HttpPost("{familyId:guid}/children")]
         public async Task<IActionResult> AddChild(Guid familyId, [FromBody] AddChildRequest req, CancellationToken ct)
             => ToResponse(await sender.Send(

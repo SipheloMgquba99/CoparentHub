@@ -1,5 +1,5 @@
-import { useState, type FC, type FormEvent } from "react";
-import type { User, Family } from "../../types";
+import { useState, useEffect, type FC, type FormEvent } from "react";
+import type { User, Family, FamilyInviteStatus } from "../../types";
 import * as api from "../../api";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
@@ -33,9 +33,19 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [inviteEmailSent, setInviteEmailSent] = useState(false);
   const [inviteEmailErr, setInviteEmailErr] = useState("");
   const [sentExpiry, setSentExpiry] = useState("");
+  const [inviteStatus, setInviteStatus] = useState<FamilyInviteStatus | null>(null);
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
+
+  useEffect(() => {
+    if (!family || familyFull) { setInviteStatus(null); return; }
+    let cancelled = false;
+    api.getFamilyInviteStatus(family.id)
+      .then(status => { if (!cancelled) setInviteStatus(status); })
+      .catch(() => { if (!cancelled) setInviteStatus(null); });
+    return () => { cancelled = true; };
+  }, [family?.id, familyFull]);
 
   const handleSendInviteEmail = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,6 +54,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
     try {
       const invite = await api.sendFamilyInviteEmail(family.id, inviteEmailInput.trim());
       setSentExpiry(formatExpiry(invite.expiresAt));
+      setInviteStatus({ expiresAt: invite.expiresAt, isExpired: false });
       setInviteEmailSent(true);
       setInviteEmailInput("");
       setTimeout(() => setInviteEmailSent(false), 5000);
@@ -203,6 +214,18 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
             <div className="fidlbl">Invite a co-parent</div>
             <div className="fidexp fid-hint">They'll get an email with a link to join {family.name}.</div>
 
+            {!inviteEmailSent && inviteStatus && (
+              inviteStatus.isExpired ? (
+                <div className="fid-msg fid-msg-err">
+                  <Ico d={Icons.mail} size={12} /> Your last invite expired — send a new one below.
+                </div>
+              ) : (
+                <div className="fid-msg fid-msg-ok">
+                  <Ico d={Icons.ok} size={12} /> Invite pending — {formatExpiry(inviteStatus.expiresAt).toLowerCase()}.
+                </div>
+              )
+            )}
+
             <form onSubmit={handleSendInviteEmail} className="fid-email-row">
               <input
                 type="email"
@@ -220,7 +243,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
               >
                 {sendingInviteEmail
                   ? <><Spinner dark /> Sending invite…</>
-                  : <><Ico d={Icons.mail} size={13} />Send Invite</>
+                  : <><Ico d={Icons.mail} size={13} />{inviteStatus?.isExpired ? "Resend Invite" : "Send Invite"}</>
                 }
               </button>
             </form>

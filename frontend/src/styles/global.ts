@@ -456,7 +456,7 @@ button, [role="button"] { touch-action: manipulation; }
 .fid-email-input:focus { outline: none; border-color: var(--gold); background: rgba(255,255,255,.12); }
 .fid-email-input:disabled { opacity: .6; }
 .fid-send-btn { background: var(--gold); color: #1f2937; border: none; font-weight: 700; flex-shrink: 0; }
-.fid-msg { display: flex; align-items: center; gap: 5px; font-size: 12px; margin-top: 8px; }
+.fid-msg { display: flex; align-items: center; gap: 5px; font-size: 12px; margin: 8px 0; }
 .fid-msg-ok { color: var(--gold); }
 .fid-msg-err { color: var(--danger); }
 
@@ -506,8 +506,9 @@ button, [role="button"] { touch-action: manipulation; }
 }
 .spind { background: conic-gradient(from 0deg, transparent 0%, transparent 65%, var(--accent) 100%); }
 @keyframes rot { to { transform: rotate(360deg); } }
-.page-spinner { display: flex; justify-content: center; align-items: center; padding: 40px; }
+.page-spinner { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; gap: 12px; }
 .page-spinner .spin { width: 28px; height: 28px; }
+.page-spinner-label { font-size: 13px; color: var(--muted); text-align: center; max-width: 260px; line-height: 1.5; }
 
 /* ── TOAST ── */
 .toast {

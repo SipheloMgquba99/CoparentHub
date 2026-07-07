@@ -133,6 +133,26 @@ namespace CoparentHub.Application.Features.Family
         }
     }
 
+    public class GetFamilyInviteStatusHandler(IUnitOfWork uow)
+        : IRequestHandler<GetFamilyInviteStatusQuery, Result<FamilyInviteStatusDto?>>
+    {
+        public async Task<Result<FamilyInviteStatusDto?>> Handle(GetFamilyInviteStatusQuery q, CancellationToken ct)
+        {
+            var family = await uow.Families.GetByIdAsync(q.FamilyId, ct);
+
+            if (family is null)
+                return Result<FamilyInviteStatusDto?>.Fail("Family not found.");
+
+            if (!family.IsMember(q.UserId))
+                return Result<FamilyInviteStatusDto?>.Fail("Access denied.");
+
+            var invite = await uow.Invites.GetLatestUnusedByFamilyIdAsync(q.FamilyId, ct);
+
+            return Result<FamilyInviteStatusDto?>.Ok(
+                invite is null ? null : new FamilyInviteStatusDto(invite.ExpiresAt, !invite.IsValid));
+        }
+    }
+
     public class AddChildHandler(IUnitOfWork uow)
      : IRequestHandler<AddChildCommand, Result<Guid>>
     {

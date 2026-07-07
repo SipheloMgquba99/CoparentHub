@@ -101,6 +101,12 @@ namespace CoparentHub.Infrastructure.Repositories
                 .OrderByDescending(i => i.ExpiresAt)
                 .FirstOrDefaultAsync(ct);
 
+        public Task<FamilyInvite?> GetLatestUnusedByFamilyIdAsync(Guid familyId, CancellationToken ct = default) =>
+            db.FamilyInvites
+                .Where(i => i.FamilyId == familyId && !i.Used)
+                .OrderByDescending(i => i.ExpiresAt)
+                .FirstOrDefaultAsync(ct);
+
         public Task<FamilyInvite?> GetByCodeAsync(string code, CancellationToken ct = default) =>
             db.FamilyInvites.FirstOrDefaultAsync(i => i.Code == code, ct);
 

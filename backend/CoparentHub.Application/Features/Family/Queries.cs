@@ -17,4 +17,9 @@ namespace CoparentHub.Application.Features.Family
         Guid FamilyId,
         Guid UserId
     ) : IRequest<Result<FamilyInviteDto?>>;
+
+    public record GetFamilyInviteStatusQuery(
+        Guid FamilyId,
+        Guid UserId
+    ) : IRequest<Result<FamilyInviteStatusDto?>>;
 }
