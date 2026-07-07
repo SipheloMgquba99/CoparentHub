@@ -5,7 +5,7 @@ export const Spinner: FC<{ dark?: boolean }> = ({ dark }) => (
 );
 
 export const PageSpinner: FC = () => (
-  <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+  <div className="page-spinner">
     <Spinner dark />
   </div>
 );

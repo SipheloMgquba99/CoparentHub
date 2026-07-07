@@ -47,6 +47,23 @@ namespace CoparentHub.Infrastructure
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
+            var brevoConfigured =
+                !string.IsNullOrWhiteSpace(config["Brevo:ApiKey"]) &&
+                !string.IsNullOrWhiteSpace(config["Brevo:SenderEmail"]);
+
+            if (brevoConfigured)
+            {
+                services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
+                {
+                    client.BaseAddress = new Uri("https://api.brevo.com/v3/");
+                    client.DefaultRequestHeaders.Add("api-key", config["Brevo:ApiKey"]);
+                });
+            }
+            else
+            {
+                services.AddSingleton<IEmailSender, NullEmailSender>();
+            }
+
             return services;
         }
     }

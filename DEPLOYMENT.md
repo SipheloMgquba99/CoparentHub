@@ -81,6 +81,20 @@ Keep both outputs handy for the next step. If you ever need to rotate the encryp
 note: any data already encrypted with the old key becomes unreadable — treat it like a
 database backup, not a password.
 
+### Optional — email invites via Brevo
+
+Co-parents can always be invited with a manually-shared code, but if you also want the app to
+send a real, branded invite email, sign up for a free [Brevo](https://www.brevo.com) account
+(no card required, 300 emails/day forever):
+
+1. Create a Brevo account.
+2. **Senders, Domains & Dedicated IPs → Senders** — add and verify the email address you want
+   invites to be sent from (Brevo emails you a confirmation link — no domain/DNS needed).
+3. **SMTP & API → API Keys** — generate a new API key. Keep it handy for the next step.
+
+If you skip this, the app still works fine — the invite-by-email button just reports itself
+unavailable, and the existing code/copy flow keeps working.
+
 ## Step 3 — Deploy the Render Blueprint
 
 This repo includes `render.yaml`, which defines both services (`coparenthub-api` and
@@ -96,6 +110,8 @@ This repo includes `render.yaml`, which defines both services (`coparenthub-api`
    | `Jwt__Secret` (on `coparenthub-api`) | the `openssl rand -hex 32` output from Step 2 |
    | `Encryption__Key` (on `coparenthub-api`) | the `openssl rand -base64 32` output from Step 2 |
    | `Cors__AllowedOrigins__0` (on `coparenthub-api`) | leave as a placeholder for now (e.g. `https://placeholder.onrender.com`) — fixed in Step 4 |
+   | `Brevo__ApiKey` (on `coparenthub-api`) | the API key from the optional Brevo setup above — leave blank to skip email invites for now |
+   | `Brevo__SenderEmail` (on `coparenthub-api`) | the sender email you verified in Brevo — leave blank to skip email invites for now |
    | `VITE_API_BASE_URL` (on `coparenthub-web`) | leave as a placeholder for now — fixed in Step 4 |
 
 4. Click **Apply**. Render builds and deploys both services. This takes a few minutes,

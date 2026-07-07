@@ -50,6 +50,18 @@ export function getActiveFamilyInvite(familyId: string): Promise<FamilyInvite | 
   return request<FamilyInvite | null>("GET", `/family/${familyId}/invites/active`);
 }
 
+export function sendFamilyInviteEmail(familyId: string, email: string): Promise<FamilyInvite> {
+  if (!familyId) {
+    return Promise.reject(new Error("familyId is required"));
+  }
+
+  if (!email) {
+    return Promise.reject(new Error("email is required"));
+  }
+
+  return request<FamilyInvite>("POST", `/family/${familyId}/invites/email`, { email: email.trim() });
+}
+
 export function addChild(
   familyId: string,
   req: AddChildRequest

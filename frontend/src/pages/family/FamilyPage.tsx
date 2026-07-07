@@ -32,6 +32,10 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [invite, setInvite] = useState<FamilyInvite | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteErr, setInviteErr] = useState("");
+  const [inviteEmailInput, setInviteEmailInput] = useState("");
+  const [sendingInviteEmail, setSendingInviteEmail] = useState(false);
+  const [inviteEmailSent, setInviteEmailSent] = useState(false);
+  const [inviteEmailErr, setInviteEmailErr] = useState("");
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
@@ -56,6 +60,21 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
       setInviteErr(ex instanceof Error ? ex.message : "Failed to generate invite code.");
     }
     setInviteLoading(false);
+  };
+
+  const handleSendInviteEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!family || !inviteEmailInput.trim()) return;
+    setSendingInviteEmail(true); setInviteEmailErr(""); setInviteEmailSent(false);
+    try {
+      setInvite(await api.sendFamilyInviteEmail(family.id, inviteEmailInput.trim()));
+      setInviteEmailSent(true);
+      setInviteEmailInput("");
+      setTimeout(() => setInviteEmailSent(false), 4000);
+    } catch (ex: unknown) {
+      setInviteEmailErr(ex instanceof Error ? ex.message : "Failed to send invite email.");
+    }
+    setSendingInviteEmail(false);
   };
 
   const copyInviteCode = () => {
@@ -269,6 +288,40 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
                 {inviteLoading ? <Spinner /> : invite ? "Regenerate" : "Generate"}
               </button>
             </div>
+
+            <form
+              onSubmit={handleSendInviteEmail}
+              style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}
+            >
+              <input
+                type="email"
+                value={inviteEmailInput}
+                onChange={e => setInviteEmailInput(e.target.value)}
+                placeholder="Co-parent's email address"
+                required
+                style={{
+                  flex: 1, minWidth: 0, padding: "9px 12px", borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)",
+                  color: "#fff", fontSize: 13,
+                }}
+              />
+              <button
+                className="btn btn-sm"
+                type="submit"
+                disabled={sendingInviteEmail || !inviteEmailInput.trim()}
+                style={{ background: "var(--gold)", color: "#1f2937", border: "none", gap: 5, fontWeight: 700, width: "auto", flexShrink: 0 }}
+              >
+                {sendingInviteEmail ? <Spinner dark /> : "Send Invite"}
+              </button>
+            </form>
+            {inviteEmailSent && (
+              <div className="fidexp" style={{ color: "var(--gold)", marginTop: 6 }}>
+                <Ico d={Icons.ok} size={12} /> Invite email sent!
+              </div>
+            )}
+            {inviteEmailErr && (
+              <div className="fidexp" style={{ color: "var(--danger)", marginTop: 6 }}>{inviteEmailErr}</div>
+            )}
           </>
         )}
       </div>

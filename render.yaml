@@ -29,6 +29,15 @@ services:
       # afterward (see DEPLOYMENT.md "wire up the URLs" step) and Render will redeploy.
       - key: Cors__AllowedOrigins__0
         sync: false
+      # Brevo transactional email (family-invite emails) — API key + verified sender email
+      # from your Brevo account, pasted in during Blueprint setup. If left unset, the app
+      # falls back to a no-op sender and invite-by-email just reports itself unavailable.
+      - key: Brevo__ApiKey
+        sync: false
+      - key: Brevo__SenderEmail
+        sync: false
+      - key: Brevo__SenderName
+        value: CoParentHub
 
   # Frontend — static site (free, unlimited, not counted against web-service instance hours).
   - name: coparenthub-web

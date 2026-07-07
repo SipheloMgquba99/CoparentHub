@@ -19,6 +19,12 @@ namespace CoparentHub.Application.Features.Family
         Guid UserId
     ) : IRequest<Result<FamilyInviteDto>>;
 
+    public record SendFamilyInviteEmailCommand(
+        Guid FamilyId,
+        Guid UserId,
+        string Email
+    ) : IRequest<Result<FamilyInviteDto>>;
+
     public record AddChildCommand(
         Guid FamilyId,
         Guid UserId,

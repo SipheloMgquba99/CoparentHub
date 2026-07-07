@@ -31,4 +31,14 @@ namespace CoparentHub.Application.Features.Family
                 .Length(8);
         }
     }
+
+    public class SendFamilyInviteEmailValidator : AbstractValidator<SendFamilyInviteEmailCommand>
+    {
+        public SendFamilyInviteEmailValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty()
+                .EmailAddress();
+        }
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using CoparentHub.Application.Features.DTOs;
+using CoparentHub.Application.Interfaces;
 using CoparentHub.Application.Interfaces.Repositories;
 using CoparentHub.Domain.Common;
 using MediatR;
@@ -80,6 +81,33 @@ namespace CoparentHub.Application.Features.Family
             uow.Invites.Add(invite);
 
             await uow.SaveAsync(ct);
+
+            return Result<FamilyInviteDto>.Ok(new FamilyInviteDto(invite.Code, invite.ExpiresAt));
+        }
+    }
+
+    public class SendFamilyInviteEmailHandler(IUnitOfWork uow, IEmailSender emailSender)
+        : IRequestHandler<SendFamilyInviteEmailCommand, Result<FamilyInviteDto>>
+    {
+        public async Task<Result<FamilyInviteDto>> Handle(SendFamilyInviteEmailCommand cmd, CancellationToken ct)
+        {
+            if (!emailSender.IsConfigured)
+                return Result<FamilyInviteDto>.Fail(
+                    "Email invites aren't available in this environment yet — please share the invite code directly.");
+
+            var resolved = await FamilyInviteResolver.GetOrCreateActiveInvite(uow, cmd.FamilyId, cmd.UserId, ct);
+
+            if (!resolved.IsSuccess)
+                return Result<FamilyInviteDto>.Fail(resolved.Error!);
+
+            var (family, invite) = resolved.Value!;
+
+            await uow.SaveAsync(ct);
+
+            var inviter = await uow.Users.GetByIdAsync(cmd.UserId, ct);
+
+            await emailSender.SendFamilyInviteAsync(
+                cmd.Email, family.Name, inviter!.FullName, invite.Code, invite.ExpiresAt, ct);
 
             return Result<FamilyInviteDto>.Ok(new FamilyInviteDto(invite.Code, invite.ExpiresAt));
         }
@@ -184,6 +212,34 @@ namespace CoparentHub.Application.Features.Family
                 dtos.Add(await FamilyMapper.ToDto(family, uow, ct));
 
             return Result<List<FamilyDto>>.Ok(dtos);
+        }
+    }
+
+    internal static class FamilyInviteResolver
+    {
+        public static async Task<Result<(CoparentHub.Domain.Entities.Family Family, CoparentHub.Domain.Entities.FamilyInvite Invite)>> GetOrCreateActiveInvite(
+            IUnitOfWork uow, Guid familyId, Guid userId, CancellationToken ct)
+        {
+            var family = await uow.Families.GetByIdAsync(familyId, ct);
+
+            if (family is null)
+                return Result<(CoparentHub.Domain.Entities.Family, CoparentHub.Domain.Entities.FamilyInvite)>.Fail("Family not found.");
+
+            if (!family.IsMember(userId))
+                return Result<(CoparentHub.Domain.Entities.Family, CoparentHub.Domain.Entities.FamilyInvite)>.Fail("Access denied.");
+
+            if (family.Members.Count >= 2)
+                return Result<(CoparentHub.Domain.Entities.Family, CoparentHub.Domain.Entities.FamilyInvite)>.Fail("Family already has 2 co-parents.");
+
+            var invite = await uow.Invites.GetActiveByFamilyIdAsync(familyId, ct);
+
+            if (invite is null)
+            {
+                invite = CoparentHub.Domain.Entities.FamilyInvite.Create(familyId);
+                uow.Invites.Add(invite);
+            }
+
+            return Result<(CoparentHub.Domain.Entities.Family, CoparentHub.Domain.Entities.FamilyInvite)>.Ok((family, invite));
         }
     }
 

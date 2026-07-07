@@ -35,6 +35,10 @@ namespace CoparentHub.Api.Controllers
         public async Task<IActionResult> GetActiveInvite(Guid familyId, CancellationToken ct)
             => ToResponse(await sender.Send(new GetActiveFamilyInviteQuery(familyId, CurrentUserId), ct));
 
+        [HttpPost("{familyId:guid}/invites/email")]
+        public async Task<IActionResult> SendInviteEmail(Guid familyId, [FromBody] SendFamilyInviteEmailRequest req, CancellationToken ct)
+            => ToResponse(await sender.Send(new SendFamilyInviteEmailCommand(familyId, CurrentUserId, req.Email), ct));
+
         [HttpPost("{familyId:guid}/children")]
         public async Task<IActionResult> AddChild(Guid familyId, [FromBody] AddChildRequest req, CancellationToken ct)
             => ToResponse(await sender.Send(
@@ -48,4 +52,5 @@ namespace CoparentHub.Api.Controllers
 
     public record AddChildRequest(string Name, DateOnly? DateOfBirth);
     public record JoinFamilyRequest(string Code);
+    public record SendFamilyInviteEmailRequest(string Email);
 }

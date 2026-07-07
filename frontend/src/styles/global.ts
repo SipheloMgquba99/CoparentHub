@@ -483,9 +483,17 @@ button, [role="button"] { touch-action: manipulation; }
 .chip.on { background: var(--btn-p-bg); border-color: var(--btn-p-bg); color: var(--btn-p-text); font-weight: 600; }
 
 /* ── SPINNER ── */
-.spin { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: rot .65s linear infinite; }
-.spind { border-color: rgba(255,255,255,.12); border-top-color: var(--text); }
+.spin {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, transparent 65%, #fff 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+  animation: rot .75s cubic-bezier(.5,0,.5,1) infinite;
+}
+.spind { background: conic-gradient(from 0deg, transparent 0%, transparent 65%, var(--accent) 100%); }
 @keyframes rot { to { transform: rotate(360deg); } }
+.page-spinner { display: flex; justify-content: center; align-items: center; padding: 40px; }
+.page-spinner .spin { width: 28px; height: 28px; }
 
 /* ── TOAST ── */
 .toast {
