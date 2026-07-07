@@ -1,0 +1,126 @@
+# Custom Domain Setup — coparenthub.co.za on Render
+
+This document records how the `coparenthub.co.za` domain was connected to our
+Render-hosted app, including the issue we hit along the way and how it was
+resolved. Keep this updated if the setup ever changes (e.g. moving registrars,
+adding subdomains, re-enabling proxying, etc.).
+
+## Summary
+
+| Item | Value |
+|---|---|
+| Domain | `coparenthub.co.za` |
+| Registrar | HostAfrica |
+| DNS Host | Cloudflare (Free plan) |
+| App Host | Render (Web Service) |
+| Render app subdomain | `coparenthub-web.onrender.com` |
+| SSL | Auto-issued by Render after domain verification |
+
+## Why we needed Cloudflare in the middle
+
+The domain was registered directly with **HostAfrica**, but a domain-only
+account (no hosting plan) does not include a DNS Zone Editor — only a
+**Nameservers** page. Render requires the ability to add/edit `CNAME`/`A`
+records directly, which HostAfrica's domain-only panel doesn't expose.
+
+**Fix:** Point the domain's nameservers to a free **Cloudflare** account,
+which gives full DNS record management at no cost, and manage the actual
+`CNAME` records there instead of at HostAfrica.
+
+## Step-by-step: what we did
+
+### 1. Add the custom domain in Render
+- Render Dashboard → select the web service → **Settings → Custom Domains**
+  → **+ Add Custom Domain**.
+- Added both:
+  - `coparenthub.co.za` (root/apex domain)
+  - `www.coparenthub.co.za`
+- Render generated the required DNS targets:
+  - `www` → CNAME → `coparenthub-web.onrender.com`
+  - `@` (root) → CNAME → `coparenthub-web.onrender.com`
+    (fallback: A record → `216.24.57.1` if CNAME/ANAME isn't supported by the
+    DNS provider)
+
+### 2. Create a free Cloudflare account and add the domain
+- Signed up at cloudflare.com → **Add a Site** → `coparenthub.co.za`.
+- Selected the **Free plan**.
+- Cloudflare scanned for existing DNS records (none of consequence found).
+- Cloudflare assigned two nameservers:
+  - `dawn.ns.cloudflare.com`
+  - `viddy.ns.cloudflare.com`
+
+### 3. Add DNS records in Cloudflare
+Under **DNS → Records**, added:
+
+| Type | Name | Target | Proxy status | TTL |
+|---|---|---|---|---|
+| CNAME | `@` | `coparenthub-web.onrender.com` | **DNS only** (grey cloud) | Auto |
+| CNAME | `www` | `coparenthub-web.onrender.com` | **DNS only** (grey cloud) | Auto |
+
+> **Important:** Proxy status must be set to **DNS only** (grey cloud), not
+> **Proxied** (orange cloud). If proxying is left on, Render cannot verify
+> domain ownership or issue an SSL certificate, since Render needs to see
+> the DNS resolve directly to it. Proxying can be turned on later once the
+> domain is verified and the certificate is issued, if Cloudflare's
+> CDN/WAF features are wanted — but leave it off for now.
+
+### 4. Update nameservers at HostAfrica
+- HostAfrica → **My Domains** → `coparenthub.co.za` → **Manage** →
+  **Nameservers**.
+- Replaced HostAfrica's default nameservers with Cloudflare's:
+  - `dawn.ns.cloudflare.com`
+  - `viddy.ns.cloudflare.com`
+- Removed any other/default nameservers listed.
+- Saved changes.
+
+### 5. Wait for propagation
+- Cloudflare estimates **1–2 hours**, but it can take up to **24 hours**
+  depending on the registrar.
+- Cloudflare emails automatically once it detects the domain is active on
+  its nameservers.
+
+### 6. Verify in Render
+- Once Cloudflare shows the domain as active, return to Render's
+  **Custom Domains** section and click **Verify**.
+- On success, Render automatically issues a free TLS/SSL certificate for
+  the domain.
+
+## Issues encountered
+
+### Issue: Render domain verification failed initially
+**Symptom:** Render showed *"We weren't able to verify coparenthub.co.za"*
+right after adding the domain.
+
+**Cause:** No DNS records had been added yet at that point — HostAfrica's
+domain-only account had no DNS Zone Editor, so there was nowhere to add the
+CNAME records Render needed.
+
+**Resolution:** Moved DNS management to Cloudflare (free plan) by switching
+nameservers at HostAfrica, then added the CNAME records in Cloudflare
+instead.
+
+### Issue: HostAfrica has no DNS Zone Editor on domain-only accounts
+**Symptom:** Sidebar only showed **Nameservers**, **Auto Renew**, **Addons**,
+etc. — no "DNS Zone Editor" or "Manage DNS" option.
+
+**Cause:** DNS zone editing at HostAfrica appears to be tied to having an
+active hosting plan with them, not just a domain registration.
+
+**Resolution:** Used Cloudflare as an external DNS manager instead of relying
+on HostAfrica's panel. This is free and gives full control over records.
+
+## Notes for future reference
+
+- If we ever add more subdomains (e.g. `api.coparenthub.co.za`,
+  `app.coparenthub.co.za`), add them the same way: create the custom domain
+  in Render first to get the exact target value, then add a matching CNAME
+  record in Cloudflare with proxy status set to DNS only until verified.
+- Do not add an `AAAA` record — Render does not support IPv6, and an AAAA
+  record can cause verification/routing issues.
+- If we ever want Cloudflare's CDN/WAF/DDoS protection (orange-cloud
+  proxying) after the domain is verified and SSL is issued, that can be
+  turned on per record in Cloudflare DNS settings, but should be tested since
+  the current Render integration is DNS-only.
+- Domain renews annually at HostAfrica — first renewal due
+  **July 7th, 2027**. Nameservers stay pointed at Cloudflare regardless of
+  where the domain is renewed, unless we deliberately change them back.
