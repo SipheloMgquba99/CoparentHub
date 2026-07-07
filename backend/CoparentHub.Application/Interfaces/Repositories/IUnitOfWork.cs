@@ -11,6 +11,7 @@ namespace CoparentHub.Application.Interfaces.Repositories
         IEventRepository Events { get; }
         INotificationRepository Notifications { get; }
         IFamilyInviteRepository Invites { get; }
+        IPasswordResetTokenRepository PasswordResetTokens { get; }
         Task SaveAsync(CancellationToken ct = default);
     }
 }

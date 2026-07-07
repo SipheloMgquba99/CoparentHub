@@ -3,6 +3,7 @@ using System;
 using CoparentHub.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoparentHub.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260707132353_AddPasswordResetTokens")]
+    partial class AddPasswordResetTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,10 +119,6 @@ namespace CoparentHub.Persistence.Migrations
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("InviteeEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
                     b.Property<bool>("Used")
                         .HasColumnType("boolean");
 
@@ -129,8 +128,6 @@ namespace CoparentHub.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("FamilyId");
-
-                    b.HasIndex("InviteeEmail");
 
                     b.ToTable("FamilyInvites");
                 });

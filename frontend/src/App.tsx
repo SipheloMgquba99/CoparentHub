@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type FC } from "react";
-import type { Family, AppNotification } from "./types";
+import type { Family, AppNotification, PendingInvite } from "./types";
 import { CSS } from "./styles/global";
 import { Shell } from "./components/layout";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -11,8 +11,9 @@ import HomePage from "./pages/home/HomePage";
 import SchedPage from "./pages/schedule/SchedulePage";
 import FamPage from "./pages/family/FamilyPage";
 import AuthPage from "./pages/auth/AuthPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import * as api from "./api";
-import { PageSpinner } from "./components/ui";
+import { PageSpinner, Spinner } from "./components/ui";
 
 const NOTIFICATIONS_POLL_MS = 15_000;
 
@@ -28,6 +29,10 @@ const Inner: FC = () => {
   const [loadingFamilies, setLoadingFamilies] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const isFirstFamiliesLoadRef = useRef(true);
+  const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
+  const [dismissedPendingInvite, setDismissedPendingInvite] = useState(false);
+  const [joiningPending, setJoiningPending] = useState(false);
+  const [pendingJoinErr, setPendingJoinErr] = useState("");
 
   const onEventsChanged = () => setRefresh((n) => n + 1);
 
@@ -91,6 +96,28 @@ const Inner: FC = () => {
 
   const activeFamily = families.find(f => f.id === activeFamilyId) ?? null;
 
+  useEffect(() => {
+    if (!user) { setPendingInvite(null); return; }
+    let cancelled = false;
+    api.getPendingInvite()
+      .then(invite => { if (!cancelled) setPendingInvite(invite); })
+      .catch(() => { if (!cancelled) setPendingInvite(null); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const handleJoinPending = async () => {
+    if (!pendingInvite) return;
+    setJoiningPending(true); setPendingJoinErr("");
+    try {
+      const familyId = await api.joinFamilyByCode(pendingInvite.code);
+      setPendingInvite(null);
+      onFamChange(familyId);
+    } catch (ex: unknown) {
+      setPendingJoinErr(ex instanceof Error ? ex.message : "Failed to join family.");
+    }
+    setJoiningPending(false);
+  };
+
   const fetchNotifications = useCallback(() => {
     api.getNotifications()
       .then((next) => {
@@ -118,49 +145,103 @@ const Inner: FC = () => {
   if (!user) return null;
 
   return (
-    <Shell
-      user={user.fullName}
-      tab={tab}
-      setTab={setTab}
-      onLogout={logout}
-      notifications={notifications}
-      onMarkNotificationRead={onMarkNotificationRead}
-      families={families}
-      activeFamilyId={activeFamilyId}
-      onSelectFamily={setActiveFamilyId}
-    >
-      {loadingFamilies ? (
-        <PageSpinner label="Waking up the server — this can take up to a minute if it's been idle." />
-      ) : tab === "home" ? (
-        <HomePage
-          user={user}
-          family={activeFamily}
-          setTab={setTab}
-          refresh={refresh}
-          onEventsChanged={onEventsChanged}
-        />
-      ) : tab === "sched" ? (
-        <SchedPage
-          user={user}
-          family={activeFamily}
-          refresh={refresh}
-          onEventsChanged={onEventsChanged}
-        />
-      ) : tab === "fam" ? (
-        <FamPage
-          user={user}
-          families={families}
-          activeFamilyId={activeFamilyId}
-          onSelectFamily={setActiveFamilyId}
-          onFamChange={onFamChange}
-        />
-      ) : null}
-    </Shell>
+    <>
+      <Shell
+        user={user.fullName}
+        tab={tab}
+        setTab={setTab}
+        onLogout={logout}
+        notifications={notifications}
+        onMarkNotificationRead={onMarkNotificationRead}
+        families={families}
+        activeFamilyId={activeFamilyId}
+        onSelectFamily={setActiveFamilyId}
+      >
+        {loadingFamilies ? (
+          <PageSpinner label="Waking up the server — this can take up to a minute if it's been idle." />
+        ) : tab === "home" ? (
+          <HomePage
+            user={user}
+            family={activeFamily}
+            setTab={setTab}
+            refresh={refresh}
+            onEventsChanged={onEventsChanged}
+          />
+        ) : tab === "sched" ? (
+          <SchedPage
+            user={user}
+            family={activeFamily}
+            refresh={refresh}
+            onEventsChanged={onEventsChanged}
+          />
+        ) : tab === "fam" ? (
+          <FamPage
+            user={user}
+            families={families}
+            activeFamilyId={activeFamilyId}
+            onSelectFamily={setActiveFamilyId}
+            onFamChange={onFamChange}
+          />
+        ) : null}
+      </Shell>
+
+      {pendingInvite && !dismissedPendingInvite && (
+        <div className="ov" onClick={e => e.target === e.currentTarget && !joiningPending && setDismissedPendingInvite(true)}>
+          <div className="sh">
+            <div className="shdrag" />
+            <div className="shhead">
+              <div className="shtitle">You're Invited!</div>
+            </div>
+            <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 20 }}>
+              You've been invited to join <strong>{pendingInvite.familyName}</strong> as a co-parent on coparenthub.
+            </p>
+            {pendingJoinErr && <div className="err">{pendingJoinErr}</div>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-o"
+                onClick={() => setDismissedPendingInvite(true)}
+                disabled={joiningPending}
+                style={{ flex: 1 }}
+              >
+                Maybe Later
+              </button>
+              <button
+                type="button"
+                className="btn btn-p"
+                onClick={handleJoinPending}
+                disabled={joiningPending}
+                style={{ flex: 1 }}
+              >
+                {joiningPending ? <Spinner /> : "Join Now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
 const AppContent: FC = () => {
   const { user, loading } = useAuth();
+  const [resetToken, setResetToken] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("reset")
+  );
+
+  if (resetToken) {
+    return (
+      <ResetPasswordPage
+        token={resetToken}
+        onDone={() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("reset");
+          window.history.replaceState(null, "", url.toString());
+          setResetToken(null);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return <PageSpinner />;

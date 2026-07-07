@@ -11,6 +11,10 @@ namespace CoparentHub.Api.Controllers
             Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? User.FindFirstValue("sub")!);
 
+        protected string CurrentUserEmail =>
+            User.FindFirstValue(ClaimTypes.Email)
+                ?? User.FindFirstValue("email")!;
+
         protected IActionResult ToResponse<T>(Result<T> result)
             => result.IsSuccess
                 ? Ok(result.Value)

@@ -7,9 +7,6 @@ namespace CoparentHub.Infrastructure.Repositories
 {
     public class UserRepository(AppDbContext db) : IUserRepository
     {
-        // AsNoTracking is safe here: nothing in the app mutates a User after RegisterHandler
-        // creates it (no profile-edit feature exists), so these reads never need to be tracked
-        // for a later SaveChanges, and detached instances are safe to cache across requests.
         public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, ct);
         public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
@@ -17,6 +14,9 @@ namespace CoparentHub.Infrastructure.Repositories
         public Task<bool> ExistsAsync(string email, CancellationToken ct = default) =>
             db.Users.AnyAsync(u => u.Email == email.ToLower(), ct);
         public void Add(User user) => db.Users.Add(user);
+
+        public async Task SetPasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct = default) =>
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, passwordHash), ct);
     }
 
     public class FamilyRepository(AppDbContext db) : IFamilyRepository
@@ -121,7 +121,21 @@ namespace CoparentHub.Infrastructure.Repositories
         public Task<FamilyInvite?> GetByCodeAsync(string code, CancellationToken ct = default) =>
             db.FamilyInvites.FirstOrDefaultAsync(i => i.Code == code, ct);
 
+        public Task<FamilyInvite?> GetActiveByEmailAsync(string email, CancellationToken ct = default) =>
+            db.FamilyInvites
+                .Where(i => i.InviteeEmail == email.Trim().ToLower() && !i.Used && i.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(i => i.ExpiresAt)
+                .FirstOrDefaultAsync(ct);
+
         public void Add(FamilyInvite invite) => db.FamilyInvites.Add(invite);
+    }
+
+    public class PasswordResetTokenRepository(AppDbContext db) : IPasswordResetTokenRepository
+    {
+        public Task<PasswordResetToken?> GetByTokenAsync(string token, CancellationToken ct = default) =>
+            db.PasswordResetTokens.FirstOrDefaultAsync(t => t.Token == token, ct);
+
+        public void Add(PasswordResetToken token) => db.PasswordResetTokens.Add(token);
     }
 
     public class UnitOfWork(
@@ -130,7 +144,8 @@ namespace CoparentHub.Infrastructure.Repositories
         IFamilyRepository families,
         IEventRepository events,
         INotificationRepository notifications,
-        IFamilyInviteRepository invites)
+        IFamilyInviteRepository invites,
+        IPasswordResetTokenRepository passwordResetTokens)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -138,6 +153,7 @@ namespace CoparentHub.Infrastructure.Repositories
         public IEventRepository Events { get; } = events;
         public INotificationRepository Notifications { get; } = notifications;
         public IFamilyInviteRepository Invites { get; } = invites;
+        public IPasswordResetTokenRepository PasswordResetTokens { get; } = passwordResetTokens;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
     }
 }

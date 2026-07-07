@@ -11,6 +11,23 @@ namespace CoparentHub.Infrastructure
             !string.IsNullOrWhiteSpace(config["Brevo:ApiKey"]) &&
             !string.IsNullOrWhiteSpace(config["Brevo:SenderEmail"]);
 
+        private string SenderName
+        {
+            get
+            {
+                var name = config["Brevo:SenderName"];
+                return string.IsNullOrWhiteSpace(name) ? "Coparenthub" : name;
+            }
+        }
+        private string AppUrl
+        {
+            get
+            {
+                var url = config["Cors:AllowedOrigins:0"];
+                return string.IsNullOrWhiteSpace(url) ? "https://app.coparenthub.com" : url;
+            }
+        }
+
         public async Task SendFamilyInviteAsync(
             string toEmail,
             string familyName,
@@ -19,24 +36,88 @@ namespace CoparentHub.Infrastructure
             DateTime expiresAt,
             CancellationToken ct = default)
         {
-            var senderEmail = config["Brevo:SenderEmail"]!;
-            var senderName = config["Brevo:SenderName"];
-            if (string.IsNullOrWhiteSpace(senderName)) senderName = "Coparenthub";
-
-            var appUrl = config["Cors:AllowedOrigins:0"];
-            if (string.IsNullOrWhiteSpace(appUrl)) appUrl = "https://app.coparenthub.com";
-
             var payload = new
             {
-                sender = new { name = senderName, email = senderEmail },
+                sender = new { name = SenderName, email = config["Brevo:SenderEmail"] },
                 to = new[] { new { email = toEmail } },
                 subject = $"{inviterFullName} invited you to join {familyName} on coparenthub",
-                htmlContent = BuildHtml(familyName, inviterFullName, code, expiresAt, appUrl),
+                htmlContent = BuildHtml(familyName, inviterFullName, code, expiresAt, AppUrl),
             };
 
             var response = await http.PostAsJsonAsync("smtp/email", payload, ct);
             response.EnsureSuccessStatusCode();
         }
+
+        public async Task SendPasswordResetAsync(
+            string toEmail,
+            string fullName,
+            string token,
+            DateTime expiresAt,
+            CancellationToken ct = default)
+        {
+            var resetLink = $"{AppUrl}?reset={token}";
+            var payload = new
+            {
+                sender = new { name = SenderName, email = config["Brevo:SenderEmail"] },
+                to = new[] { new { email = toEmail } },
+                subject = "Reset your coparenthub password",
+                htmlContent = BuildPasswordResetHtml(fullName, resetLink, expiresAt),
+            };
+
+            var response = await http.PostAsJsonAsync("smtp/email", payload, ct);
+            response.EnsureSuccessStatusCode();
+        }
+
+        private static string BuildPasswordResetHtml(string fullName, string resetLink, DateTime expiresAt) => $"""
+            <!DOCTYPE html>
+            <html>
+            <body style="margin:0;padding:0;background-color:#f4f1ea;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f1ea;padding:32px 0;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                      <tr>
+                        <td style="background-color:#1f2937;padding:28px 32px;text-align:center;">
+                          <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f4c95d;font-weight:bold;letter-spacing:0.5px;">coparenthub</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:32px;font-family:Arial,Helvetica,sans-serif;">
+                          <p style="margin:0 0 16px;font-size:16px;color:#1f2937;">
+                            Hi {fullName}, we received a request to reset your coparenthub password.
+                          </p>
+                          <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.5;">
+                            Click the button below to choose a new password. If you didn't request this, you can safely ignore this email — your password won't change.
+                          </p>
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                            <tr>
+                              <td align="center">
+                                <table role="presentation" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td align="center" style="border-radius:8px;background-color:#f4c95d;">
+                                      <a href="{resetLink}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:bold;color:#1f2937;text-decoration:none;">Reset Password</a>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                          <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;">
+                            Or paste this link into your browser: <a href="{resetLink}" style="color:#6b7280;">{resetLink}</a>
+                          </p>
+                          <p style="margin:0;font-size:13px;color:#9ca3af;">
+                            This link expires {expiresAt:MMMM d, yyyy 'at' h:mm tt} UTC.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+            """;
+
         private static string BuildHtml(
             string familyName, string inviterFullName, string code, DateTime expiresAt, string appUrl) => $"""
             <!DOCTYPE html>
@@ -110,6 +191,14 @@ namespace CoparentHub.Infrastructure
             logger.LogWarning(
                 "SendFamilyInviteAsync called with no email provider configured (to={ToEmail}, family={FamilyName})",
                 toEmail, familyName);
+            return Task.CompletedTask;
+        }
+
+        public Task SendPasswordResetAsync(
+            string toEmail, string fullName, string token, DateTime expiresAt, CancellationToken ct = default)
+        {
+            logger.LogWarning(
+                "SendPasswordResetAsync called with no email provider configured (to={ToEmail})", toEmail);
             return Task.CompletedTask;
         }
     }

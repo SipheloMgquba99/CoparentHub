@@ -12,4 +12,12 @@ namespace CoparentHub.Application.Features.Auth
         string ConfirmPassword) : IRequest<Result<AuthDto>>;
     public record LoginCommand(string Email, string Password) : ICommand<AuthDto>, IRequest<Result<AuthDto>>;
     public record AuthDto(Guid UserId, string Token, string FullName, string Email);
+
+    public record ForgotPasswordCommand(string Email) : IRequest<Result<bool>>;
+
+    public record ResetPasswordCommand(
+        string Token,
+        string NewPassword,
+        string ConfirmPassword
+    ) : IRequest<Result<bool>>;
 }

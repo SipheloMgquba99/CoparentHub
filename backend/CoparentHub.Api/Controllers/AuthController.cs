@@ -19,5 +19,15 @@ namespace CoparentHub.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginCommand cmd, CancellationToken ct)
             => ToResponse(await sender.Send(cmd, ct));
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand cmd, CancellationToken ct)
+            => ToResponse(await sender.Send(cmd, ct));
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(ResetPasswordCommand cmd, CancellationToken ct)
+            => ToResponse(await sender.Send(cmd, ct));
     }
 }

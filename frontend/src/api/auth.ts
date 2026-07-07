@@ -16,3 +16,11 @@ export async function register(req: RegisterRequest): Promise<AuthResponse> {
 export function logout(): void {
   setToken(null);
 }
+
+export function forgotPassword(email: string): Promise<boolean> {
+  return request<boolean>("POST", "/auth/forgot-password", { email: email.trim() });
+}
+
+export function resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+  return request<boolean>("POST", "/auth/reset-password", { token, newPassword, confirmPassword });
+}

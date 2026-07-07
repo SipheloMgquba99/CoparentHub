@@ -24,4 +24,24 @@ namespace CoparentHub.Application.Features.Auth
             RuleFor(x => x.Password).NotEmpty();
         }
     }
+
+    public class ForgotPasswordValidator : AbstractValidator<ForgotPasswordCommand>
+    {
+        public ForgotPasswordValidator()
+        {
+            RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        }
+    }
+
+    public class ResetPasswordValidator : AbstractValidator<ResetPasswordCommand>
+    {
+        public ResetPasswordValidator()
+        {
+            RuleFor(x => x.Token).NotEmpty();
+            RuleFor(x => x.NewPassword).NotEmpty().MinimumLength(8);
+            RuleFor(x => x.ConfirmPassword)
+                .NotEmpty()
+                .Equal(x => x.NewPassword).WithMessage("Passwords do not match.");
+        }
+    }
 }

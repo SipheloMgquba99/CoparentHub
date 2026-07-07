@@ -125,6 +125,7 @@ namespace CoparentHub.Application.Features.Family
                 return Result<FamilyInviteDto>.Fail(resolved.Error!);
 
             var (family, invite) = resolved.Value!;
+            invite.SetInviteeEmail(cmd.Email);
 
             await uow.SaveAsync(ct);
 
@@ -174,6 +175,23 @@ namespace CoparentHub.Application.Features.Family
 
             return Result<FamilyInviteStatusDto?>.Ok(
                 invite is null ? null : new FamilyInviteStatusDto(invite.ExpiresAt, !invite.IsValid));
+        }
+    }
+
+    public class GetPendingInviteHandler(IUnitOfWork uow)
+        : IRequestHandler<GetPendingInviteQuery, Result<PendingInviteDto?>>
+    {
+        public async Task<Result<PendingInviteDto?>> Handle(GetPendingInviteQuery q, CancellationToken ct)
+        {
+            var invite = await uow.Invites.GetActiveByEmailAsync(q.Email, ct);
+
+            if (invite is null)
+                return Result<PendingInviteDto?>.Ok(null);
+
+            var family = await uow.Families.GetByIdAsync(invite.FamilyId, ct);
+
+            return Result<PendingInviteDto?>.Ok(
+                family is null ? null : new PendingInviteDto(family.Name, invite.Code));
         }
     }
 

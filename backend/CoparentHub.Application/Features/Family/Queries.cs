@@ -22,4 +22,8 @@ namespace CoparentHub.Application.Features.Family
         Guid FamilyId,
         Guid UserId
     ) : IRequest<Result<FamilyInviteStatusDto?>>;
+
+    public record GetPendingInviteQuery(
+        string Email
+    ) : IRequest<Result<PendingInviteDto?>>;
 }

@@ -8,13 +8,14 @@ namespace CoparentHub.Domain.Entities
         private const int CodeLength = 8;
         private static readonly TimeSpan Validity = TimeSpan.FromHours(48);
 
-        // No 0/O/1/I/L — avoids visual ambiguity when a code is read aloud or hand-typed.
         private const string Alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
         public Guid FamilyId { get; private set; }
         public string Code { get; private set; } = default!;
         public DateTime ExpiresAt { get; private set; }
         public bool Used { get; private set; }
+
+        public string? InviteeEmail { get; private set; }
 
         private FamilyInvite() { }
 
@@ -29,6 +30,8 @@ namespace CoparentHub.Domain.Entities
         public bool IsValid => !Used && DateTime.UtcNow < ExpiresAt;
 
         public void MarkUsed() => Used = true;
+
+        public void SetInviteeEmail(string email) => InviteeEmail = email.Trim().ToLower();
 
         private static string GenerateCode()
         {

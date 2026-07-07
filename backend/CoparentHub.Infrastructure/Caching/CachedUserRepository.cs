@@ -25,5 +25,11 @@ namespace CoparentHub.Infrastructure.Caching
             inner.ExistsAsync(email, ct);
 
         public void Add(User user) => inner.Add(user);
+
+        public async Task SetPasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct = default)
+        {
+            await inner.SetPasswordHashAsync(userId, passwordHash, ct);
+            cache.Remove(Key(userId));
+        }
     }
 }

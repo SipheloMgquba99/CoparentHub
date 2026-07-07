@@ -16,6 +16,7 @@ namespace CoparentHub.Persistence.Data
         public DbSet<Attendance> Attendances => Set<Attendance>();
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
+        public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -155,12 +156,31 @@ namespace CoparentHub.Persistence.Data
                 b.Property(i => i.Code).HasMaxLength(8).IsRequired();
                 b.HasIndex(i => i.Code).IsUnique();
 
+                b.Property(i => i.InviteeEmail).HasMaxLength(256);
+                b.HasIndex(i => i.InviteeEmail);
+
                 b.HasOne<Family>()
                     .WithMany()
                     .HasForeignKey(i => i.FamilyId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 b.HasIndex(i => i.FamilyId);
+            });
+
+            m.Entity<PasswordResetToken>(b =>
+            {
+                b.HasKey(t => t.Id);
+                b.Property(t => t.Id).ValueGeneratedNever();
+
+                b.Property(t => t.Token).HasMaxLength(64).IsRequired();
+                b.HasIndex(t => t.Token).IsUnique();
+
+                b.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(t => t.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(t => t.UserId);
             });
         }
     }

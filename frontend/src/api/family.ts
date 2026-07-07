@@ -2,6 +2,7 @@ import type {
   Family,
   FamilyInvite,
   FamilyInviteStatus,
+  PendingInvite,
   AddChildRequest,
   CreateFamilyRequest,
 } from "../types";
@@ -77,6 +78,10 @@ export function getFamilyInviteStatus(familyId: string): Promise<FamilyInviteSta
   }
 
   return request<FamilyInviteStatus | null>("GET", `/family/${familyId}/invites/status`);
+}
+
+export function getPendingInvite(): Promise<PendingInvite | null> {
+  return request<PendingInvite | null>("GET", "/family/pending-invite");
 }
 
 export function addChild(

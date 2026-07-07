@@ -8,6 +8,7 @@ namespace CoparentHub.Application.Interfaces.Repositories
         Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
         Task<bool> ExistsAsync(string email, CancellationToken ct = default);
         void Add(User user);
+        Task SetPasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct = default);
     }
 
 }

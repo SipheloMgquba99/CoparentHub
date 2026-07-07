@@ -3,6 +3,7 @@ import { useAuth } from "../../context/useAuth";
 import { useTheme } from "../../context/useTheme";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
+import * as api from "../../api";
 
 const THEME_ICON = { light: "☀️", dark: "🌙", navy: "🌊" };
 
@@ -17,9 +18,16 @@ const AuthPage: FC = () => {
   const [fn,     setFn]     = useState("");
   const [ln,     setLn]     = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [err,    setErr]    = useState("");
   const [busy,   setBusy]   = useState(false);
+
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [sendingForgot, setSendingForgot] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotErr, setForgotErr] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,6 +47,25 @@ const AuthPage: FC = () => {
   };
 
   const switchTab = (t: "login" | "register") => { setTab(t); setErr(""); };
+
+  const openForgot = () => {
+    setForgotEmail(email);
+    setForgotErr("");
+    setForgotSent(false);
+    setShowForgot(true);
+  };
+
+  const handleForgotSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSendingForgot(true); setForgotErr("");
+    try {
+      await api.forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch (ex: unknown) {
+      setForgotErr(ex instanceof Error ? ex.message : "Something went wrong.");
+    }
+    setSendingForgot(false);
+  };
 
   return (
     <div className="ascreen">
@@ -129,23 +156,47 @@ const AuthPage: FC = () => {
                 At least 8 characters.
               </div>
             )}
+            {tab === "login" && (
+              <button
+                type="button"
+                onClick={openForgot}
+                style={{
+                  background: "none", border: "none", cursor: "pointer", padding: 0,
+                  marginTop: 8, fontSize: 12.5, color: "var(--accent)", fontWeight: 600,
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
           {tab === "register" && (
             <div className="f">
               <label htmlFor="cpw">Confirm Password</label>
-              <input
-                id="cpw"
-                name="new-password"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={128}
-                value={cpw}
-                onChange={e => setCpw(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
+              <div className="fw">
+                <input
+                  id="cpw"
+                  name="new-password"
+                  type={showCpw ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={128}
+                  value={cpw}
+                  onChange={e => setCpw(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  style={{ paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  className="ficon"
+                  onClick={() => setShowCpw(s => !s)}
+                  aria-label={showCpw ? "Hide password" : "Show password"}
+                  title={showCpw ? "Hide password" : "Show password"}
+                >
+                  <Ico d={showCpw ? Icons.eyeX : Icons.eye} size={16} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -170,6 +221,50 @@ const AuthPage: FC = () => {
           </button>
         </form>
       </div>
+
+      {showForgot && (
+        <div className="ov" onClick={e => e.target === e.currentTarget && !sendingForgot && setShowForgot(false)}>
+          <div className="sh">
+            <div className="shdrag" />
+            <div className="shhead">
+              <div className="shtitle">Reset Password</div>
+              <button type="button" className="shclose" onClick={() => setShowForgot(false)} disabled={sendingForgot} aria-label="Close">
+                <Ico d={Icons.x} size={15} />
+              </button>
+            </div>
+
+            {forgotSent ? (
+              <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                If an account exists for <strong>{forgotEmail}</strong>, we've sent a link to reset your password.
+              </p>
+            ) : (
+              <form onSubmit={handleForgotSubmit}>
+                <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 16 }}>
+                  Enter your account email and we'll send you a link to reset your password.
+                </p>
+                <div className="f">
+                  <label htmlFor="forgot-email">Email</label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    autoComplete="email"
+                    maxLength={256}
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    autoFocus
+                  />
+                </div>
+                {forgotErr && <div className="err">{forgotErr}</div>}
+                <button className="btn btn-p" type="submit" disabled={sendingForgot}>
+                  {sendingForgot ? <Spinner /> : "Send Reset Link"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

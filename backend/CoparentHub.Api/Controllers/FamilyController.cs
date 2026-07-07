@@ -31,6 +31,10 @@ namespace CoparentHub.Api.Controllers
         public async Task<IActionResult> Delete(Guid familyId, CancellationToken ct)
             => ToResponse(await sender.Send(new DeleteFamilyCommand(familyId, CurrentUserId), ct));
 
+        [HttpGet("pending-invite")]
+        public async Task<IActionResult> GetPendingInvite(CancellationToken ct)
+            => ToResponse(await sender.Send(new GetPendingInviteQuery(CurrentUserEmail), ct));
+
         [HttpPost("{familyId:guid}/invites")]
         public async Task<IActionResult> CreateInvite(Guid familyId, CancellationToken ct)
             => ToResponse(await sender.Send(new CreateFamilyInviteCommand(familyId, CurrentUserId), ct));
