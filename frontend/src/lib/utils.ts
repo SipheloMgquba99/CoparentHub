@@ -1,4 +1,4 @@
-import type { AttendanceStatus, EventType } from "../types";
+import type { AttendanceStatus, EventType, ExpenseCategory } from "../types";
 
 export const ini = (n: string): string =>
   (n || "").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -49,3 +49,8 @@ export const RSVP_CODE: Record<AttendanceStatus, string> = {
   Tentative: "T",
   Declined: "D",
 };
+
+export const fmtZAR = (amount: number): string =>
+  new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(amount);
+
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = ["Medical", "School", "Clothing", "Activity", "Childcare", "Other"];

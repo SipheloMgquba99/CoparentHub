@@ -20,9 +20,10 @@ interface ShellProps {
 }
 
 const NAV_ITEMS = [
-  { id: "home",  label: "Home",     icon: Icons.home  },
-  { id: "sched", label: "Schedule", icon: Icons.cal   },
-  { id: "fam",   label: "Family",   icon: Icons.users },
+  { id: "home",     label: "Home",     icon: Icons.home   },
+  { id: "sched",    label: "Schedule", icon: Icons.cal    },
+  { id: "expenses", label: "Expenses", icon: Icons.wallet },
+  { id: "fam",      label: "Family",   icon: Icons.users  },
 ] as const;
 
 const THEME_ICON = { light: "☀️", dark: "🌙", navy: "🌊" };

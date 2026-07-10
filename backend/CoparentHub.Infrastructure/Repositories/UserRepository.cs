@@ -155,6 +155,25 @@ namespace CoparentHub.Infrastructure.Repositories
             await db.PushSubscriptions.Where(p => p.Endpoint == endpoint).ExecuteDeleteAsync(ct);
     }
 
+    public class ExpenseRepository(AppDbContext db) : IExpenseRepository
+    {
+        public Task<Expense?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            db.Expenses.FirstOrDefaultAsync(e => e.Id == id, ct);
+
+        public Task<List<Expense>> GetByFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            db.Expenses.Where(e => e.FamilyId == familyId).ToListAsync(ct);
+
+        public void Add(Expense expense) => db.Expenses.Add(expense);
+        public void Remove(Expense expense) => db.Expenses.Remove(expense);
+
+        public async Task MarkAllSettledAsync(Guid familyId, CancellationToken ct = default) =>
+            await db.Expenses.Where(e => e.FamilyId == familyId && !e.IsSettled)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsSettled, true), ct);
+
+        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            await db.Expenses.Where(e => e.FamilyId == familyId).ExecuteDeleteAsync(ct);
+    }
+
     public class UnitOfWork(
         AppDbContext db,
         IUserRepository users,
@@ -163,7 +182,8 @@ namespace CoparentHub.Infrastructure.Repositories
         INotificationRepository notifications,
         IFamilyInviteRepository invites,
         IPasswordResetTokenRepository passwordResetTokens,
-        IPushSubscriptionRepository pushSubscriptions)
+        IPushSubscriptionRepository pushSubscriptions,
+        IExpenseRepository expenses)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -173,6 +193,7 @@ namespace CoparentHub.Infrastructure.Repositories
         public IFamilyInviteRepository Invites { get; } = invites;
         public IPasswordResetTokenRepository PasswordResetTokens { get; } = passwordResetTokens;
         public IPushSubscriptionRepository PushSubscriptions { get; } = pushSubscriptions;
+        public IExpenseRepository Expenses { get; } = expenses;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
     }
 }

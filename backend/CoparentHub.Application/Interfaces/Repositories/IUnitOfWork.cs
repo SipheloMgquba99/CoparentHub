@@ -13,6 +13,7 @@ namespace CoparentHub.Application.Interfaces.Repositories
         IFamilyInviteRepository Invites { get; }
         IPasswordResetTokenRepository PasswordResetTokens { get; }
         IPushSubscriptionRepository PushSubscriptions { get; }
+        IExpenseRepository Expenses { get; }
         Task SaveAsync(CancellationToken ct = default);
     }
 }

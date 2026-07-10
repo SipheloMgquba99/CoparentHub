@@ -18,6 +18,7 @@ namespace CoparentHub.Persistence.Data
         public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
         public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
         public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+        public DbSet<Expense> Expenses => Set<Expense>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -216,6 +217,22 @@ namespace CoparentHub.Persistence.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 b.HasIndex(p => p.UserId);
+            });
+
+            m.Entity<Expense>(b =>
+            {
+                b.HasKey(e => e.Id);
+                b.Property(e => e.Id).ValueGeneratedNever();
+
+                b.Property(e => e.Description).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+
+                b.Property(e => e.Category).HasConversion<string>();
+
+                b.Property(e => e.Amount).HasPrecision(12, 2);
+                b.Property(e => e.SplitPercentForPayer).HasPrecision(5, 2);
+
+                b.HasIndex(e => e.FamilyId);
+                b.HasIndex(e => e.Date);
             });
         }
     }

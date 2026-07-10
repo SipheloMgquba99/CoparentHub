@@ -10,6 +10,7 @@ import { Ico, Icons } from "./components/icons";
 
 import HomePage from "./pages/home/HomePage";
 import SchedPage from "./pages/schedule/SchedulePage";
+import ExpensesPage from "./pages/expenses/ExpensesPage";
 import FamPage from "./pages/family/FamilyPage";
 import AuthPage from "./pages/auth/AuthPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
@@ -183,6 +184,13 @@ const Inner: FC = () => {
           />
         ) : tab === "sched" ? (
           <SchedPage
+            user={user}
+            family={activeFamily}
+            refresh={refresh}
+            onEventsChanged={onEventsChanged}
+          />
+        ) : tab === "expenses" ? (
+          <ExpensesPage
             user={user}
             family={activeFamily}
             refresh={refresh}

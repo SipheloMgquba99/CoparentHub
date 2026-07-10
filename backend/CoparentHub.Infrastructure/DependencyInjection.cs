@@ -45,6 +45,7 @@ namespace CoparentHub.Infrastructure
             services.AddScoped<IFamilyInviteRepository, FamilyInviteRepository>();
             services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
             services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
+            services.AddScoped<IExpenseRepository, ExpenseRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();

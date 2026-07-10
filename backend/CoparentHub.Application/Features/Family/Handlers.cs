@@ -42,6 +42,7 @@ namespace CoparentHub.Application.Features.Family
 
             await uow.Events.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
             await uow.Notifications.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
+            await uow.Expenses.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
 
             uow.Families.Remove(family);
             await uow.SaveAsync(ct);
