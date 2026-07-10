@@ -9,6 +9,11 @@ namespace CoparentHub.Domain.Entities
         public string Email { get; private set; } = default!;
         public string PasswordHash { get; private set; } = default!;
 
+        // Bumped on password change; invalidates outstanding JWTs (see JwtBearerEvents).
+        public Guid SecurityStamp { get; private set; } = Guid.NewGuid();
+        public int FailedLoginCount { get; private set; }
+        public DateTime? LockedUntil { get; private set; }
+
         private User() { }
 
         public static User Create(string firstName, string lastName, string email, string passwordHash)

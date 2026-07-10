@@ -20,4 +20,9 @@ namespace CoparentHub.Application.Features.Auth
         string NewPassword,
         string ConfirmPassword
     ) : IRequest<Result<bool>>;
+
+    public record DeleteAccountCommand(
+        Guid UserId,
+        string Password
+    ) : IRequest<Result<bool>>;
 }

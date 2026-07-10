@@ -4,4 +4,5 @@ export * from "./events";
 export * from "./notifications";
 export * from "./push";
 export * from "./expenses";
+export * from "./messages";
 export { getToken, setUnauthorizedHandler } from './http'

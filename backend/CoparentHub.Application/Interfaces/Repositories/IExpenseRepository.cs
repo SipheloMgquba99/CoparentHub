@@ -9,6 +9,5 @@ namespace CoparentHub.Application.Interfaces.Repositories
         void Add(Expense expense);
         void Remove(Expense expense);
         Task MarkAllSettledAsync(Guid familyId, CancellationToken ct = default);
-        Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default);
     }
 }

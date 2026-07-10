@@ -26,10 +26,23 @@ namespace CoparentHub.Infrastructure.Caching
 
         public void Add(User user) => inner.Add(user);
 
+        public void Remove(User user)
+        {
+            inner.Remove(user);
+            cache.Remove(Key(user.Id));
+        }
+
         public async Task SetPasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct = default)
         {
             await inner.SetPasswordHashAsync(userId, passwordHash, ct);
             cache.Remove(Key(userId));
         }
+
+        // Login reads lockout fields via the uncached GetByEmailAsync, so no cache invalidation needed here.
+        public Task RecordFailedLoginAsync(Guid userId, int lockoutThreshold, TimeSpan lockoutDuration, CancellationToken ct = default) =>
+            inner.RecordFailedLoginAsync(userId, lockoutThreshold, lockoutDuration, ct);
+
+        public Task ResetFailedLoginAsync(Guid userId, CancellationToken ct = default) =>
+            inner.ResetFailedLoginAsync(userId, ct);
     }
 }

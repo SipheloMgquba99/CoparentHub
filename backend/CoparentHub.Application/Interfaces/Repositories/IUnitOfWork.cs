@@ -14,6 +14,10 @@ namespace CoparentHub.Application.Interfaces.Repositories
         IPasswordResetTokenRepository PasswordResetTokens { get; }
         IPushSubscriptionRepository PushSubscriptions { get; }
         IExpenseRepository Expenses { get; }
+        IMessageRepository Messages { get; }
         Task SaveAsync(CancellationToken ct = default);
+
+        // Wraps multiple Save/Execute calls in one DB transaction.
+        Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken ct = default);
     }
 }

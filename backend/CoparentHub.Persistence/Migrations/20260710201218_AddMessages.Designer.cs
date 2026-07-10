@@ -3,6 +3,7 @@ using System;
 using CoparentHub.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoparentHub.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710201218_AddMessages")]
+    partial class AddMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -298,8 +301,6 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FamilyId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Notifications");
@@ -435,9 +436,6 @@ namespace CoparentHub.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<int>("FailedLoginCount")
-                        .HasColumnType("integer");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -446,15 +444,9 @@ namespace CoparentHub.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<Guid>("SecurityStamp")
-                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -477,15 +469,6 @@ namespace CoparentHub.Persistence.Migrations
                 {
                     b.HasOne("CoparentHub.Domain.Entities.Family", null)
                         .WithMany("Children")
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("CoparentHub.Domain.Entities.Expense", b =>
-                {
-                    b.HasOne("CoparentHub.Domain.Entities.Family", null)
-                        .WithMany()
                         .HasForeignKey("FamilyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -515,24 +498,6 @@ namespace CoparentHub.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("CoparentHub.Domain.Entities.Message", b =>
-                {
-                    b.HasOne("CoparentHub.Domain.Entities.Family", null)
-                        .WithMany()
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("CoparentHub.Domain.Entities.Notification", b =>
-                {
-                    b.HasOne("CoparentHub.Domain.Entities.Family", null)
-                        .WithMany()
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("CoparentHub.Domain.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("CoparentHub.Domain.Entities.User", null)
@@ -547,15 +512,6 @@ namespace CoparentHub.Persistence.Migrations
                     b.HasOne("CoparentHub.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("CoparentHub.Domain.Entities.ScheduledEvent", b =>
-                {
-                    b.HasOne("CoparentHub.Domain.Entities.Family", null)
-                        .WithMany()
-                        .HasForeignKey("FamilyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -40,10 +40,7 @@ namespace CoparentHub.Application.Features.Family
             if (!family.IsMember(cmd.UserId))
                 return Result<Guid>.Fail("Access denied.");
 
-            await uow.Events.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
-            await uow.Notifications.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
-            await uow.Expenses.DeleteAllForFamilyAsync(cmd.FamilyId, ct);
-
+            // Events/Notifications/Expenses/Messages cascade-delete via their FK to Family.
             uow.Families.Remove(family);
             await uow.SaveAsync(ct);
             cacheVersion.Bump(cmd.FamilyId);

@@ -14,9 +14,25 @@ namespace CoparentHub.Infrastructure.Repositories
         public Task<bool> ExistsAsync(string email, CancellationToken ct = default) =>
             db.Users.AnyAsync(u => u.Email == email.ToLower(), ct);
         public void Add(User user) => db.Users.Add(user);
+        public void Remove(User user) => db.Users.Remove(user);
 
         public async Task SetPasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct = default) =>
-            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, passwordHash), ct);
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.PasswordHash, passwordHash)
+                .SetProperty(u => u.SecurityStamp, Guid.NewGuid()), ct);
+
+        public async Task RecordFailedLoginAsync(Guid userId, int lockoutThreshold, TimeSpan lockoutDuration, CancellationToken ct = default) =>
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.FailedLoginCount, u => u.FailedLoginCount + 1)
+                .SetProperty(u => u.LockedUntil, u =>
+                    u.FailedLoginCount + 1 >= lockoutThreshold
+                        ? DateTime.UtcNow.Add(lockoutDuration)
+                        : u.LockedUntil), ct);
+
+        public async Task ResetFailedLoginAsync(Guid userId, CancellationToken ct = default) =>
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.FailedLoginCount, 0)
+                .SetProperty(u => u.LockedUntil, (DateTime?)null), ct);
     }
 
     public class FamilyRepository(AppDbContext db) : IFamilyRepository
@@ -78,8 +94,6 @@ namespace CoparentHub.Infrastructure.Repositories
         }
 
         public void Add(ScheduledEvent ev) => db.Events.Add(ev);
-        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
-            await db.Events.Where(e => e.FamilyId == familyId).ExecuteDeleteAsync(ct);
 
         public Task<List<ScheduledEvent>> GetStartingSoonAsync(DateTime notBefore, DateTime notAfter, CancellationToken ct = default) =>
             db.Events.Include(e => e.Attendances)
@@ -99,9 +113,6 @@ namespace CoparentHub.Infrastructure.Repositories
                 .ToListAsync(ct);
 
         public void Add(Notification notification) => db.Notifications.Add(notification);
-
-        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
-            await db.Notifications.Where(n => n.FamilyId == familyId).ExecuteDeleteAsync(ct);
     }
 
     public class FamilyInviteRepository(AppDbContext db) : IFamilyInviteRepository
@@ -169,9 +180,25 @@ namespace CoparentHub.Infrastructure.Repositories
         public async Task MarkAllSettledAsync(Guid familyId, CancellationToken ct = default) =>
             await db.Expenses.Where(e => e.FamilyId == familyId && !e.IsSettled)
                 .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsSettled, true), ct);
+    }
 
-        public async Task DeleteAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
-            await db.Expenses.Where(e => e.FamilyId == familyId).ExecuteDeleteAsync(ct);
+    public class MessageRepository(AppDbContext db) : IMessageRepository
+    {
+        public Task<Message?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            db.Messages.FirstOrDefaultAsync(m => m.Id == id, ct);
+
+        public Task<List<Message>> GetByFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            db.Messages.Where(m => m.FamilyId == familyId)
+                .OrderBy(m => m.CreatedAt)
+                .Take(500)
+                .ToListAsync(ct);
+
+        public void Add(Message message) => db.Messages.Add(message);
+
+        public async Task MarkThreadReadAsync(Guid familyId, Guid readerUserId, CancellationToken ct = default) =>
+            await db.Messages
+                .Where(m => m.FamilyId == familyId && m.SenderUserId != readerUserId && !m.IsReadByRecipient)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByRecipient, true), ct);
     }
 
     public class UnitOfWork(
@@ -183,7 +210,8 @@ namespace CoparentHub.Infrastructure.Repositories
         IFamilyInviteRepository invites,
         IPasswordResetTokenRepository passwordResetTokens,
         IPushSubscriptionRepository pushSubscriptions,
-        IExpenseRepository expenses)
+        IExpenseRepository expenses,
+        IMessageRepository messages)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -194,6 +222,24 @@ namespace CoparentHub.Infrastructure.Repositories
         public IPasswordResetTokenRepository PasswordResetTokens { get; } = passwordResetTokens;
         public IPushSubscriptionRepository PushSubscriptions { get; } = pushSubscriptions;
         public IExpenseRepository Expenses { get; } = expenses;
+        public IMessageRepository Messages { get; } = messages;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
+
+        // If EnableRetryOnFailure is ever added to the Npgsql context, this must switch to
+        // db.Database.CreateExecutionStrategy().ExecuteAsync(...) or EF Core will throw here.
+        public async Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken ct = default)
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            try
+            {
+                await operation(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
+        }
     }
 }

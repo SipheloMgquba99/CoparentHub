@@ -1,5 +1,6 @@
 using CoparentHub.Api.Middleware;
 using CoparentHub.Application;
+using CoparentHub.Application.Interfaces.Repositories;
 using CoparentHub.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,7 +10,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -137,6 +140,28 @@ builder.Services
         o.IncludeErrorDetails = builder.Environment.IsDevelopment();
         o.Events = new JwtBearerEvents
         {
+            OnTokenValidated = async context =>
+            {
+                var userIdClaim = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                var stampClaim = context.Principal?.FindFirstValue(JwtTokenService.SecurityStampClaimType);
+
+                if (!Guid.TryParse(userIdClaim, out var userId) || string.IsNullOrEmpty(stampClaim))
+                {
+                    context.Fail("Invalid token.");
+                    return;
+                }
+
+                // Rejects tokens issued before a password reset — SecurityStamp is bumped on
+                // every password change. GetByIdAsync is the cached path (10-min TTL), so this
+                // is cheap.
+                var userRepo = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                var user = await userRepo.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+
+                if (user is null || !string.Equals(user.SecurityStamp.ToString(), stampClaim, StringComparison.Ordinal))
+                {
+                    context.Fail("Token has been revoked.");
+                }
+            },
             OnAuthenticationFailed = context =>
             {
                 var log = context.HttpContext.RequestServices
@@ -169,6 +194,8 @@ var authPermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPermitLim
 var authWindowSeconds = builder.Configuration.GetValue("RateLimiting:AuthWindowSeconds", 60);
 var globalPermitLimit = builder.Configuration.GetValue("RateLimiting:GlobalPermitLimit", 100);
 var globalWindowSeconds = builder.Configuration.GetValue("RateLimiting:GlobalWindowSeconds", 60);
+var messagesPermitLimit = builder.Configuration.GetValue("RateLimiting:MessagesPermitLimit", 20);
+var messagesWindowSeconds = builder.Configuration.GetValue("RateLimiting:MessagesWindowSeconds", 60);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -191,6 +218,16 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
             }));
 
+    options.AddPolicy("messages", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = messagesPermitLimit,
+                Window = TimeSpan.FromSeconds(messagesWindowSeconds),
+                QueueLimit = 0,
+            }));
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -208,6 +245,12 @@ builder.Services.AddProblemDetails();
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
 {
     o.MultipartBodyLengthLimit = 5 * 1024 * 1024;
+});
+
+// No file-upload endpoints exist, so a small cap here is safe for every legitimate request.
+builder.WebHost.ConfigureKestrel(o =>
+{
+    o.Limits.MaxRequestBodySize = 1 * 1024 * 1024;
 });
 
 // Most PaaS hosts (Fly.io, Render, Railway, etc.) terminate TLS at their edge and forward

@@ -19,6 +19,7 @@ namespace CoparentHub.Persistence.Data
         public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
         public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
         public DbSet<Expense> Expenses => Set<Expense>();
+        public DbSet<Message> Messages => Set<Message>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -131,6 +132,11 @@ namespace CoparentHub.Persistence.Data
                     .HasField("_attendances")
                     .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(e => e.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
                 b.HasIndex(e => e.FamilyId);
                 b.HasIndex(e => e.StartsAt);
             });
@@ -159,7 +165,13 @@ namespace CoparentHub.Persistence.Data
 
                 b.Property(n => n.Message).HasConversion(encryptedString).HasColumnType("text").IsRequired();
 
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(n => n.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
                 b.HasIndex(n => n.UserId);
+                b.HasIndex(n => n.FamilyId);
             });
 
             m.Entity<FamilyInvite>(b =>
@@ -231,8 +243,28 @@ namespace CoparentHub.Persistence.Data
                 b.Property(e => e.Amount).HasPrecision(12, 2);
                 b.Property(e => e.SplitPercentForPayer).HasPrecision(5, 2);
 
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(e => e.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
                 b.HasIndex(e => e.FamilyId);
                 b.HasIndex(e => e.Date);
+            });
+
+            m.Entity<Message>(b =>
+            {
+                b.HasKey(msg => msg.Id);
+                b.Property(msg => msg.Id).ValueGeneratedNever();
+
+                b.Property(msg => msg.Body).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(msg => msg.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(msg => msg.FamilyId);
             });
         }
     }

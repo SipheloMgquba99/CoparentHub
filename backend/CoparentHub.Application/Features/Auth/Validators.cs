@@ -44,4 +44,13 @@ namespace CoparentHub.Application.Features.Auth
                 .Equal(x => x.NewPassword).WithMessage("Passwords do not match.");
         }
     }
+
+    public class DeleteAccountValidator : AbstractValidator<DeleteAccountCommand>
+    {
+        public DeleteAccountValidator()
+        {
+            RuleFor(x => x.UserId).NotEqual(Guid.Empty);
+            RuleFor(x => x.Password).NotEmpty();
+        }
+    }
 }

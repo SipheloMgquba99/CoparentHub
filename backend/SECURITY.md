@@ -21,8 +21,23 @@ you (the operator) are responsible for configuring before deploying it.
 ## Authentication & Authorization
 
 - Passwords are hashed with BCrypt (work factor 12), never stored or logged in plain text.
-- Auth uses short-lived (default 60 minute) signed JWTs (HMAC-SHA256). There is currently
-  no refresh-token flow — expired sessions require a new login.
+- Auth uses short-lived (default 60 minute, configurable via `Jwt:ExpiryMinutes`) signed
+  JWTs (HMAC-SHA256). There is currently no refresh-token flow — expired sessions require
+  a new login.
+- **Session invalidation on password change**: every user has a `SecurityStamp` (a GUID),
+  embedded as a claim in every issued token and bumped whenever the password is reset
+  (`SetPasswordHashAsync`). A `JwtBearerEvents.OnTokenValidated` check in `Program.cs`
+  compares the token's stamp against the current DB value on every request and rejects
+  the token if they differ — so a password reset immediately invalidates every previously
+  issued token, not just the one used to reset it. This reads through the existing 10-minute
+  `CachedUserRepository` cache, so it adds no real per-request DB cost.
+- **Per-account lockout**: after `Auth:LockoutThreshold` (default 5) consecutive failed
+  logins, an account is locked for `Auth:LockoutMinutes` (default 15), independent of the
+  per-IP rate limit below. A locked-out login attempt returns the same generic "Invalid
+  email or password" message as a wrong password (never a distinct "locked" message) and
+  skips password verification entirely, so an attacker can't use the response to
+  fingerprint locked accounts or keep re-extending the lock. The counter resets to 0 on any
+  successful login.
 - Every endpoint other than `/api/auth/register` and `/api/auth/login` requires a valid
   bearer token (`[Authorize]`), and handlers additionally check family membership before
   returning or mutating any family/child/event data (see `Family.IsMember`).
@@ -38,10 +53,13 @@ you (the operator) are responsible for configuring before deploying it.
 
 ## Rate Limiting
 
-- `/api/auth/*` is limited per-IP (default: 5 requests / 60s) to slow down credential
-  stuffing and brute-force attempts.
+- `/api/auth/*` (and `DELETE /api/account`) is limited per-IP (default: 5 requests / 60s)
+  to slow down credential stuffing and brute-force attempts.
+- Sending a message is limited per-IP (default: 20 requests / 60s) to slow down spam.
 - A global per-IP limiter (default: 100 requests / 60s) applies to the whole API.
-- Tune via `RateLimiting:*` configuration.
+- Kestrel additionally caps every request body at 1 MB — there's no file-upload endpoint
+  in this API, so any request that large is malformed or abusive.
+- Tune via `RateLimiting:*` and `Auth:Lockout*` configuration.
 
 ## Audit / Compliance Logging
 
@@ -106,17 +124,40 @@ you (the operator) are responsible for configuring before deploying it.
   `dotnet ef migrations add` after pulling it — it should report no pending model
   changes. If it doesn't, reconcile the mismatch between the migration, the model
   snapshot, and `AppDbContext` before deploying.
-
-
-
+- **No key-rotation tooling exists.** The app supports exactly one active key, read once
+  at startup — there's no key-id/versioning in the stored ciphertext and no built-in way
+  to re-encrypt existing rows under a new key. Rotating the key today means writing a
+  one-off offline job that decrypts every encrypted column with the old key and
+  re-encrypts with the new one before cutting over. Known limitation, not built as part
+  of this pass — flagged here rather than left silent.
 - This application stores children's names and dates of birth. Treat this database as
   containing sensitive personal data about minors:
   - Restrict database access to the application's service identity only.
   - Enable encryption at rest for the database and backups.
-  - Apply a data retention/deletion policy appropriate to your jurisdiction (e.g. GDPR/CCPA
-    "right to erasure") — this is not automated by the application today.
 - Error responses never leak stack traces or internal exception details outside of
   Development (`GlobalExceptionHandler`).
+
+## Data Deletion & Referential Integrity (POPIA)
+
+- **Account deletion ("right to erasure")**: `DELETE /api/account` (password-confirmed,
+  `DeleteAccountHandler`) permanently deletes a user's account. If they're the sole member
+  of a family, that family and everything scoped to it (children, events, expenses,
+  messages, notifications) is deleted too. If a co-parent remains, the family and its
+  shared history stay intact for that co-parent — the departed user's historical
+  expenses/messages/notifications have no foreign key to `User` at all, so they're safely
+  orphaned and simply display as "Unknown" wherever a name would otherwise be shown. The
+  whole operation runs inside one DB transaction (`IUnitOfWork.ExecuteInTransactionAsync`)
+  so a mid-way failure can't leave the account half-deleted.
+  **Not currently exposed in the frontend** — the endpoint exists and is fully functional,
+  but self-service deletion is deliberately not surfaced to users yet, pending an admin
+  panel that will manage account deletion instead.
+- **Cascade-enforced family deletion**: `ScheduledEvent`, `Notification`, `Expense`, and
+  `Message` all have a DB-level foreign key to `Family` with `ON DELETE CASCADE` — deleting
+  a family (via the account-deletion path above, or the existing family-delete feature)
+  is guaranteed by the database to remove every row scoped to it, rather than relying on
+  application code remembering to clean up each table individually. `FamilyMember`,
+  `Child`, `FamilyInvite`, `PasswordResetToken`, and `PushSubscription` already had this
+  same cascade behavior from earlier in the project.
 
 ## Before Going to Production — Checklist
 
@@ -130,4 +171,4 @@ you (the operator) are responsible for configuring before deploying it.
       privilege credentials, encryption at rest, and automated backups.
 - [ ] Route `AUDIT`-tagged logs to durable, access-controlled storage with a retention
       policy matching your compliance requirements.
-- [ ] Review `RateLimiting:*` values for your expected traffic.
+- [ ] Review `RateLimiting:*` and `Auth:Lockout*` values for your expected traffic.

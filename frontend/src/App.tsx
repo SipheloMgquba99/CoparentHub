@@ -11,6 +11,7 @@ import { Ico, Icons } from "./components/icons";
 import HomePage from "./pages/home/HomePage";
 import SchedPage from "./pages/schedule/SchedulePage";
 import ExpensesPage from "./pages/expenses/ExpensesPage";
+import MessagesPage from "./pages/messages/MessagesPage";
 import FamPage from "./pages/family/FamilyPage";
 import AuthPage from "./pages/auth/AuthPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
@@ -162,7 +163,7 @@ const Inner: FC = () => {
   return (
     <>
       <Shell
-        user={user.fullName}
+        user={user}
         tab={tab}
         setTab={setTab}
         onLogout={logout}
@@ -191,6 +192,13 @@ const Inner: FC = () => {
           />
         ) : tab === "expenses" ? (
           <ExpensesPage
+            user={user}
+            family={activeFamily}
+            refresh={refresh}
+            onEventsChanged={onEventsChanged}
+          />
+        ) : tab === "messages" ? (
+          <MessagesPage
             user={user}
             family={activeFamily}
             refresh={refresh}

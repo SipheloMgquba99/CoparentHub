@@ -1,13 +1,14 @@
-import { type FC, type ReactNode } from "react";
+import { useState, type FC, type ReactNode } from "react";
 import { Ico, Icons } from "../icons";
 import { ini } from "../../lib/utils";
 import { useTheme } from "../../context/useTheme";
 import { NotificationBell } from "./NotificationBell";
 import { FamilySwitcher } from "./FamilySwitcher";
-import type { AppNotification, Family } from "../../types";
+import { AccountSheet } from "./AccountSheet";
+import type { AppNotification, Family, User } from "../../types";
 
 interface ShellProps {
-  user: string;
+  user: User;
   tab: string;
   setTab: (t: string) => void;
   onLogout: () => void;
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { id: "home",     label: "Home",     icon: Icons.home   },
   { id: "sched",    label: "Schedule", icon: Icons.cal    },
   { id: "expenses", label: "Expenses", icon: Icons.wallet },
+  { id: "messages", label: "Messages", icon: Icons.chat   },
   { id: "fam",      label: "Family",   icon: Icons.users  },
 ] as const;
 
@@ -30,6 +32,7 @@ const THEME_ICON = { light: "☀️", dark: "🌙", navy: "🌊" };
 
 export const Shell: FC<ShellProps> = ({ user, tab, setTab, onLogout, notifications, onMarkNotificationRead, families, activeFamilyId, onSelectFamily, children }) => {
   const { theme, cycleTheme } = useTheme();
+  const [showAccount, setShowAccount] = useState(false);
 
   return (
     <div className="shell">
@@ -63,12 +66,12 @@ export const Shell: FC<ShellProps> = ({ user, tab, setTab, onLogout, notificatio
             className="tav"
             role="button"
             tabIndex={0}
-            title="Sign out"
-            aria-label="Sign out"
-            onClick={onLogout}
-            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onLogout(); }}
+            title="Account"
+            aria-label="Account"
+            onClick={() => setShowAccount(true)}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") setShowAccount(true); }}
           >
-            {ini(user)}
+            {ini(user.fullName)}
           </div>
         </div>
       </div>
@@ -86,6 +89,14 @@ export const Shell: FC<ShellProps> = ({ user, tab, setTab, onLogout, notificatio
           </button>
         ))}
       </nav>
+
+      {showAccount && (
+        <AccountSheet
+          user={user}
+          onClose={() => setShowAccount(false)}
+          onLogout={onLogout}
+        />
+      )}
     </div>
   );
 };

@@ -11,6 +11,8 @@ namespace CoparentHub.Infrastructure
 {
     public class JwtTokenService(IConfiguration config) : ITokenService
     {
+        public const string SecurityStampClaimType = "security_stamp";
+
         public string Generate(User user)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]!));
@@ -18,12 +20,14 @@ namespace CoparentHub.Infrastructure
             {
             new Claim(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(SecurityStampClaimType,        user.SecurityStamp.ToString()),
         };
+            var expiryMinutes = config.GetValue("Jwt:ExpiryMinutes", 60);
             var token = new JwtSecurityToken(
                 issuer: config["Jwt:Issuer"],
                 audience: config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
+                expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
