@@ -47,4 +47,25 @@ namespace CoparentHub.Application.Features.Family
                 .EmailAddress();
         }
     }
+
+    public class UpdateChildInfoValidator : AbstractValidator<UpdateChildInfoCommand>
+    {
+        public UpdateChildInfoValidator()
+        {
+            RuleFor(x => x.Allergies).MaximumLength(500);
+            RuleFor(x => x.Medications).MaximumLength(500);
+            RuleFor(x => x.MedicalNotes).MaximumLength(500);
+
+            RuleFor(x => x.DoctorName).MaximumLength(150);
+            RuleFor(x => x.SchoolName).MaximumLength(150);
+            RuleFor(x => x.SchoolContact).MaximumLength(150);
+            RuleFor(x => x.EmergencyContactName).MaximumLength(150);
+
+            // Length cap only, no format regex — avoids rejecting valid international numbers.
+            RuleFor(x => x.DoctorPhone).MaximumLength(30);
+            RuleFor(x => x.EmergencyContactPhone).MaximumLength(30);
+            RuleFor(x => x.ClothingSize).MaximumLength(30);
+            RuleFor(x => x.ShoeSize).MaximumLength(30);
+        }
+    }
 }

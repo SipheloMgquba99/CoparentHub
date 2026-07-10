@@ -96,6 +96,18 @@ namespace CoparentHub.Persistence.Data
 
                 b.Property(c => c.Name).HasConversion(encryptedString).HasColumnType("text").IsRequired();
                 b.Property(c => c.DateOfBirth).HasConversion(encryptedDateOnly).HasColumnType("text");
+
+                b.Property(c => c.Allergies).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.Medications).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.MedicalNotes).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.DoctorName).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.DoctorPhone).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.SchoolName).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.SchoolContact).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.ClothingSize).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.ShoeSize).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.EmergencyContactName).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(c => c.EmergencyContactPhone).HasConversion(encryptedNullableString).HasColumnType("text");
             });
 
             m.Entity<ScheduledEvent>(b =>

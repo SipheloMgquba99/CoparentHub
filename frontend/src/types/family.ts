@@ -7,7 +7,18 @@ export interface Member {
 export interface Child {
   id: string;
   name: string;
-  dateOfBirth: string | null; 
+  dateOfBirth: string | null;
+  allergies: string | null;
+  medications: string | null;
+  medicalNotes: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+  schoolName: string | null;
+  schoolContact: string | null;
+  clothingSize: string | null;
+  shoeSize: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
 }
 
 export interface Family {
@@ -40,4 +51,18 @@ export interface PendingInvite {
 export interface AddChildRequest {
   name: string;
   dateOfBirth: string | null;
+}
+
+export interface UpdateChildInfoRequest {
+  allergies: string | null;
+  medications: string | null;
+  medicalNotes: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+  schoolName: string | null;
+  schoolContact: string | null;
+  clothingSize: string | null;
+  shoeSize: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
 }

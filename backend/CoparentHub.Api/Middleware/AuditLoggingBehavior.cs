@@ -9,8 +9,13 @@ namespace CoparentHub.Api.Middleware
         IHttpContextAccessor httpContextAccessor) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
+        // Covers both credential-shaped fields and free-text/PII-shaped ones (child/family
+        // details, event notes, message bodies, etc.) — this app encrypts those at rest, so
+        // the audit trail must not undo that by logging them in plaintext to Seq.
         private static readonly string[] SensitiveKeywords =
-            ["password", "token", "secret", "hash", "authorization"];
+            ["password", "token", "secret", "hash", "authorization",
+             "body", "message", "description", "notes", "reason",
+             "allerg", "medicat", "doctor", "school", "contact", "address", "phone", "name"];
 
         public async Task<TResponse> Handle(
             TRequest request,

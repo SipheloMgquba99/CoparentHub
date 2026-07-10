@@ -19,10 +19,44 @@ namespace CoparentHub.Domain.Entities
         public string Name { get; private set; } = default!;
         public DateOnly? DateOfBirth { get; private set; }
 
+        public string? Allergies { get; private set; }
+        public string? Medications { get; private set; }
+        public string? MedicalNotes { get; private set; }
+        public string? DoctorName { get; private set; }
+        public string? DoctorPhone { get; private set; }
+        public string? SchoolName { get; private set; }
+        public string? SchoolContact { get; private set; }
+        public string? ClothingSize { get; private set; }
+        public string? ShoeSize { get; private set; }
+        public string? EmergencyContactName { get; private set; }
+        public string? EmergencyContactPhone { get; private set; }
+
         private Child() { }
 
         internal static Child Create(Guid familyId, string name, DateOnly? dob) =>
             new() { FamilyId = familyId, Name = name.Trim(), DateOfBirth = dob };
+
+        public Result<Child> UpdateInfo(
+            string? allergies, string? medications, string? medicalNotes,
+            string? doctorName, string? doctorPhone,
+            string? schoolName, string? schoolContact,
+            string? clothingSize, string? shoeSize,
+            string? emergencyContactName, string? emergencyContactPhone)
+        {
+            Allergies = allergies?.Trim();
+            Medications = medications?.Trim();
+            MedicalNotes = medicalNotes?.Trim();
+            DoctorName = doctorName?.Trim();
+            DoctorPhone = doctorPhone?.Trim();
+            SchoolName = schoolName?.Trim();
+            SchoolContact = schoolContact?.Trim();
+            ClothingSize = clothingSize?.Trim();
+            ShoeSize = shoeSize?.Trim();
+            EmergencyContactName = emergencyContactName?.Trim();
+            EmergencyContactPhone = emergencyContactPhone?.Trim();
+
+            return Result<Child>.Ok(this);
+        }
     }
 
     public class Family : BaseEntity

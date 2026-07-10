@@ -1,8 +1,9 @@
 import { useState, useEffect, type FC, type FormEvent } from "react";
-import type { User, Family, FamilyInviteStatus } from "../../types";
+import type { User, Family, FamilyInviteStatus, Child } from "../../types";
 import * as api from "../../api";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
+import ChildInfoSheet from "../../components/family/ChildInfoSheet";
 import { calcAge, ini, toLocalDateString } from "../../lib/utils";
 
 interface FamilyPageProps {
@@ -37,6 +38,7 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingFamily, setDeletingFamily] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
@@ -343,6 +345,9 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {calcAge(c.dateOfBirth) !== null && <span className="cage">{calcAge(c.dateOfBirth)}y</span>}
+              <button className="btn btn-gh btn-sm" style={{ padding: 6 }} onClick={() => setEditingChild(c)} aria-label={`Edit ${c.name}'s details`} title={`Edit ${c.name}'s details`}>
+                <Ico d={Icons.edit} size={14} />
+              </button>
               <button className="btn btn-gh btn-sm" style={{ color: "var(--danger)", padding: 6 }} onClick={() => handleRemoveChild(c.id)} aria-label={`Remove ${c.name}`} title={`Remove ${c.name}`}>
                 <Ico d={Icons.trash} size={14} />
               </button>
@@ -350,6 +355,15 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
           </div>
         ))}
       </div>
+
+      {editingChild && family && (
+        <ChildInfoSheet
+          familyId={family.id}
+          child={editingChild}
+          onClose={() => setEditingChild(null)}
+          onSaved={() => onFamChange()}
+        />
+      )}
 
       {mode === "child" && (
         <div className="ov" onClick={e => e.target === e.currentTarget && setMode(null)}>

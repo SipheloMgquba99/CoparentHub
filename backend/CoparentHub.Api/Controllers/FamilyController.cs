@@ -60,9 +60,33 @@ namespace CoparentHub.Api.Controllers
         public async Task<IActionResult> RemoveChild(Guid familyId, Guid childId, CancellationToken ct)
             => ToResponse(await sender.Send(
                 new RemoveChildCommand(familyId, childId, CurrentUserId), ct));
+
+        [HttpPut("{familyId:guid}/children/{childId:guid}/info")]
+        public async Task<IActionResult> UpdateChildInfo(Guid familyId, Guid childId, [FromBody] UpdateChildInfoRequest req, CancellationToken ct)
+            => ToResponse(await sender.Send(
+                new UpdateChildInfoCommand(
+                    familyId, childId, CurrentUserId,
+                    req.Allergies, req.Medications, req.MedicalNotes,
+                    req.DoctorName, req.DoctorPhone,
+                    req.SchoolName, req.SchoolContact,
+                    req.ClothingSize, req.ShoeSize,
+                    req.EmergencyContactName, req.EmergencyContactPhone), ct));
     }
 
     public record AddChildRequest(string Name, DateOnly? DateOfBirth);
     public record JoinFamilyRequest(string Code);
     public record SendFamilyInviteEmailRequest(string Email);
+
+    public record UpdateChildInfoRequest(
+        string? Allergies,
+        string? Medications,
+        string? MedicalNotes,
+        string? DoctorName,
+        string? DoctorPhone,
+        string? SchoolName,
+        string? SchoolContact,
+        string? ClothingSize,
+        string? ShoeSize,
+        string? EmergencyContactName,
+        string? EmergencyContactPhone);
 }

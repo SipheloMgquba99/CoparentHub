@@ -5,6 +5,7 @@ import type {
   PendingInvite,
   AddChildRequest,
   CreateFamilyRequest,
+  UpdateChildInfoRequest,
 } from "../types";
 import { request } from "./http";
 
@@ -116,5 +117,23 @@ export function removeChild(
   return request<string>(
     "DELETE",
     `/family/${familyId}/children/${childId}`
+  );
+}
+
+export function updateChildInfo(
+  familyId: string,
+  childId: string,
+  req: UpdateChildInfoRequest
+): Promise<string> {
+  if (!familyId || !childId) {
+    return Promise.reject(
+      new Error("familyId and childId are required")
+    );
+  }
+
+  return request<string>(
+    "PUT",
+    `/family/${familyId}/children/${childId}/info`,
+    req
   );
 }

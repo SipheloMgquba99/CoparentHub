@@ -245,6 +245,40 @@ namespace CoparentHub.Application.Features.Family
         }
     }
 
+    public class UpdateChildInfoHandler(IUnitOfWork uow)
+        : IRequestHandler<UpdateChildInfoCommand, Result<Guid>>
+    {
+        public async Task<Result<Guid>> Handle(UpdateChildInfoCommand cmd, CancellationToken ct)
+        {
+            var family = await uow.Families.GetByIdAsync(cmd.FamilyId, ct);
+
+            if (family is null)
+                return Result<Guid>.Fail("Family not found.");
+
+            if (!family.IsMember(cmd.UserId))
+                return Result<Guid>.Fail("Access denied.");
+
+            var child = family.Children.FirstOrDefault(c => c.Id == cmd.ChildId);
+
+            if (child is null)
+                return Result<Guid>.Fail("Child not found.");
+
+            var result = child.UpdateInfo(
+                cmd.Allergies, cmd.Medications, cmd.MedicalNotes,
+                cmd.DoctorName, cmd.DoctorPhone,
+                cmd.SchoolName, cmd.SchoolContact,
+                cmd.ClothingSize, cmd.ShoeSize,
+                cmd.EmergencyContactName, cmd.EmergencyContactPhone);
+
+            if (!result.IsSuccess)
+                return Result<Guid>.Fail(result.Error!);
+
+            await uow.SaveAsync(ct);
+
+            return Result<Guid>.Ok(cmd.ChildId);
+        }
+    }
+
     public class GetFamilyHandler(IUnitOfWork uow)
         : IRequestHandler<GetFamilyQuery, Result<FamilyDto>>
     {
@@ -326,7 +360,13 @@ namespace CoparentHub.Application.Features.Family
             }
 
             var children = family.Children
-                .Select(c => new ChildDto(c.Id, c.Name, c.DateOfBirth))
+                .Select(c => new ChildDto(
+                    c.Id, c.Name, c.DateOfBirth,
+                    c.Allergies, c.Medications, c.MedicalNotes,
+                    c.DoctorName, c.DoctorPhone,
+                    c.SchoolName, c.SchoolContact,
+                    c.ClothingSize, c.ShoeSize,
+                    c.EmergencyContactName, c.EmergencyContactPhone))
                 .ToList();
 
             return new FamilyDto(family.Id, family.Name, members, children);

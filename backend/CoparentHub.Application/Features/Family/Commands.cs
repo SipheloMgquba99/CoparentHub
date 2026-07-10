@@ -42,4 +42,21 @@ namespace CoparentHub.Application.Features.Family
         Guid ChildId,
         Guid UserId
     ) : IRequest<Result<Guid>>;
+
+    public record UpdateChildInfoCommand(
+        Guid FamilyId,
+        Guid ChildId,
+        Guid UserId,
+        string? Allergies,
+        string? Medications,
+        string? MedicalNotes,
+        string? DoctorName,
+        string? DoctorPhone,
+        string? SchoolName,
+        string? SchoolContact,
+        string? ClothingSize,
+        string? ShoeSize,
+        string? EmergencyContactName,
+        string? EmergencyContactPhone
+    ) : IRequest<Result<Guid>>;
 }
