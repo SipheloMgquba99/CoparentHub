@@ -1,4 +1,4 @@
-import type { AttendanceStatus, EventType, ExpenseCategory } from "../types";
+import type { AttendanceStatus, EventType, ExpenseCategory, DocumentCategory } from "../types";
 
 export const ini = (n: string): string =>
   (n || "").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -54,3 +54,11 @@ export const fmtZAR = (amount: number): string =>
   new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(amount);
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = ["Medical", "School", "Clothing", "Activity", "Childcare", "Other"];
+
+export const DOCUMENT_CATEGORIES: DocumentCategory[] = ["Legal", "Medical", "School", "Financial", "Other"];
+
+export const fmtBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};

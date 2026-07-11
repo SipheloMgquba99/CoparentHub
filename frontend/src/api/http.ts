@@ -1,6 +1,10 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "https://localhost:44327";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+export function apiUrl(path: string): string {
+  return `${BASE}/api${path}`;
+}
+
 let _token: string | null = sessionStorage.getItem("cp_token");
 
 let _onUnauthorized: (() => void) | null = null;
@@ -26,7 +30,8 @@ interface ApiError {
 }
 
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const isFormData = body instanceof FormData;
+  const headers: Record<string, string> = isFormData ? {} : { "Content-Type": "application/json" };
   if (_token) headers["Authorization"] = `Bearer ${_token}`;
 
   const controller = new AbortController();
@@ -34,10 +39,10 @@ export async function request<T>(method: string, path: string, body?: unknown): 
 
   let res: Response;
   try {
-    res = await fetch(`${BASE}/api${path}`, {
+    res = await fetch(apiUrl(path), {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch (ex: unknown) {

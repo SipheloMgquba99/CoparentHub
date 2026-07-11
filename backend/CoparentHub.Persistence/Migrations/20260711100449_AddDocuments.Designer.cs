@@ -3,6 +3,7 @@ using System;
 using CoparentHub.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoparentHub.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711100449_AddDocuments")]
+    partial class AddDocuments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,7 +54,7 @@ namespace CoparentHub.Persistence.Migrations
                     b.HasIndex("EventId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("Attendances", (string)null);
+                    b.ToTable("Attendances");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Child", b =>
@@ -109,7 +112,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("FamilyId");
 
-                    b.ToTable("Children", (string)null);
+                    b.ToTable("Children");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Document", b =>
@@ -156,7 +159,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("FamilyId");
 
-                    b.ToTable("Documents", (string)null);
+                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Expense", b =>
@@ -204,7 +207,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("FamilyId");
 
-                    b.ToTable("Expenses", (string)null);
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Family", b =>
@@ -222,7 +225,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Families", (string)null);
+                    b.ToTable("Families");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.FamilyInvite", b =>
@@ -260,7 +263,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("InviteeEmail");
 
-                    b.ToTable("FamilyInvites", (string)null);
+                    b.ToTable("FamilyInvites");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.FamilyMember", b =>
@@ -284,7 +287,7 @@ namespace CoparentHub.Persistence.Migrations
                     b.HasIndex("FamilyId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("Members", (string)null);
+                    b.ToTable("Members");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Message", b =>
@@ -312,7 +315,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("FamilyId");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Notification", b =>
@@ -349,7 +352,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.PasswordResetToken", b =>
@@ -381,7 +384,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResetTokens", (string)null);
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.PushSubscription", b =>
@@ -417,7 +420,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PushSubscriptions", (string)null);
+                    b.ToTable("PushSubscriptions");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.ScheduledEvent", b =>
@@ -466,7 +469,7 @@ namespace CoparentHub.Persistence.Migrations
 
                     b.HasIndex("StartsAt");
 
-                    b.ToTable("Events", (string)null);
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.User", b =>
@@ -508,7 +511,7 @@ namespace CoparentHub.Persistence.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("CoparentHub.Domain.Entities.Attendance", b =>

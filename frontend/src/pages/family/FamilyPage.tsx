@@ -1,10 +1,11 @@
 import { useState, useEffect, type FC, type FormEvent } from "react";
-import type { User, Family, FamilyInviteStatus, Child } from "../../types";
+import type { User, Family, FamilyInviteStatus, Child, FamilyDocument } from "../../types";
 import * as api from "../../api";
 import { Ico, Icons } from "../../components/icons";
 import { Spinner } from "../../components/ui";
 import ChildInfoSheet from "../../components/family/ChildInfoSheet";
-import { calcAge, ini, toLocalDateString } from "../../lib/utils";
+import { DocumentSheet } from "../../components/family/DocumentSheet";
+import { calcAge, ini, toLocalDateString, fmtBytes } from "../../lib/utils";
 
 interface FamilyPageProps {
   user: User;
@@ -39,9 +40,24 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
   const [deletingFamily, setDeletingFamily] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
   const [editingChild, setEditingChild] = useState<Child | null>(null);
+  const [documents, setDocuments] = useState<FamilyDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [showUploadSheet, setShowUploadSheet] = useState(false);
+  const [documentsErr, setDocumentsErr] = useState("");
 
   const family = families.find(f => f.id === activeFamilyId) ?? null;
   const familyFull = (family?.members.length ?? 0) >= 2;
+
+  useEffect(() => {
+    if (!family) { setDocuments([]); return; }
+    let cancelled = false;
+    setDocumentsLoading(true);
+    api.getDocuments(family.id)
+      .then(docs => { if (!cancelled) setDocuments(docs); })
+      .catch(() => { if (!cancelled) setDocuments([]); })
+      .finally(() => { if (!cancelled) setDocumentsLoading(false); });
+    return () => { cancelled = true; };
+  }, [family?.id]);
 
   useEffect(() => {
     if (!family || familyFull) { setInviteStatus(null); return; }
@@ -116,6 +132,39 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
       onFamChange();
     } catch (ex: unknown) {
       alert(ex instanceof Error ? ex.message : "Failed to remove child.");
+    }
+  };
+
+  const refreshDocuments = () => {
+    if (!family) return;
+    api.getDocuments(family.id).then(setDocuments).catch(() => {});
+  };
+
+  const handleUploadDocument = async (data: { file: File; category: FamilyDocument["category"]; childId: string; description: string }) => {
+    if (!family) return;
+    await api.uploadDocument(family.id, data.file, data.category, data.childId || null, data.description || null);
+    setShowUploadSheet(false);
+    refreshDocuments();
+  };
+
+  const handleRemoveDocument = async (documentId: string) => {
+    if (!family) return;
+    if (!confirm("Delete this document?")) return;
+    try {
+      await api.removeDocument(family.id, documentId);
+      refreshDocuments();
+    } catch (ex: unknown) {
+      alert(ex instanceof Error ? ex.message : "Failed to delete document.");
+    }
+  };
+
+  const handleDownloadDocument = async (doc: FamilyDocument) => {
+    if (!family) return;
+    setDocumentsErr("");
+    try {
+      await api.downloadDocument(family.id, doc.id, doc.fileName);
+    } catch (ex: unknown) {
+      setDocumentsErr(ex instanceof Error ? ex.message : "Failed to download document.");
     }
   };
 
@@ -355,6 +404,55 @@ const FamilyPage: FC<FamilyPageProps> = ({ user, families, activeFamilyId, onSel
           </div>
         ))}
       </div>
+
+      <div className="card">
+        <div className="ch">
+          <div className="ct">Documents ({documents.length})</div>
+          <button className="btn btn-p btn-sm" onClick={() => { setDocumentsErr(""); setShowUploadSheet(true); }} style={{ gap: 4 }}>
+            <Ico d={Icons.plus} size={13} />Upload
+          </button>
+        </div>
+
+        {documentsErr && <div className="err">{documentsErr}</div>}
+
+        {documentsLoading ? (
+          <Spinner />
+        ) : documents.length === 0 ? (
+          <div className="empty">No documents uploaded yet</div>
+        ) : (
+          documents.map(doc => (
+            <div key={doc.id} className="ci">
+              <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
+                <div className="av" style={{ background: "var(--echild-bg)", color: "var(--echild-text)" }}>
+                  <Ico d={Icons.file} size={15} stroke="var(--echild-text)" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="cn" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.fileName}</div>
+                  <div className="cd">
+                    {doc.category} · {fmtBytes(doc.sizeBytes)} · {doc.childName ?? "Family"} · {doc.uploadedByName}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <button className="btn btn-gh btn-sm" style={{ padding: 6 }} onClick={() => handleDownloadDocument(doc)} aria-label={`Download ${doc.fileName}`} title={`Download ${doc.fileName}`}>
+                  <Ico d={Icons.download} size={14} />
+                </button>
+                <button className="btn btn-gh btn-sm" style={{ color: "var(--danger)", padding: 6 }} onClick={() => handleRemoveDocument(doc.id)} aria-label={`Delete ${doc.fileName}`} title={`Delete ${doc.fileName}`}>
+                  <Ico d={Icons.trash} size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {showUploadSheet && family && (
+        <DocumentSheet
+          children={family.children}
+          onSubmit={handleUploadDocument}
+          onClose={() => setShowUploadSheet(false)}
+        />
+      )}
 
       {editingChild && family && (
         <ChildInfoSheet

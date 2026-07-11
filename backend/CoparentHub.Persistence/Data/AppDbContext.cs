@@ -1,6 +1,7 @@
 ﻿using CoparentHub.Domain.Common;
 using CoparentHub.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Globalization;
 
@@ -20,6 +21,8 @@ namespace CoparentHub.Persistence.Data
         public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
         public DbSet<Expense> Expenses => Set<Expense>();
         public DbSet<Message> Messages => Set<Message>();
+        public DbSet<Document> Documents => Set<Document>();
+        public DbSet<CustodySchedule> CustodySchedules => Set<CustodySchedule>();
 
         private static DateOnly? ParseEncryptedDate(string? decrypted) =>
             decrypted is null ? null : DateOnly.Parse(decrypted, CultureInfo.InvariantCulture);
@@ -37,6 +40,15 @@ namespace CoparentHub.Persistence.Data
             var encryptedDateOnly = new ValueConverter<DateOnly?, string?>(
                 v => encryptor.Encrypt(v.HasValue ? v.Value.ToString("O", CultureInfo.InvariantCulture) : null),
                 v => ParseEncryptedDate(encryptor.Decrypt(v)));
+
+            var encryptedBytes = new ValueConverter<byte[], byte[]>(
+                v => encryptor.EncryptBytes(v)!,
+                v => encryptor.DecryptBytes(v)!);
+
+            var byteArrayComparer = new ValueComparer<byte[]>(
+                (a, b) => a!.SequenceEqual(b!),
+                v => v.Aggregate(0, (hash, b) => HashCode.Combine(hash, b)),
+                v => v.ToArray());
 
             m.Entity<User>(b =>
             {
@@ -265,6 +277,26 @@ namespace CoparentHub.Persistence.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 b.HasIndex(msg => msg.FamilyId);
+            });
+
+            m.Entity<Document>(b =>
+            {
+                b.HasKey(d => d.Id);
+                b.Property(d => d.Id).ValueGeneratedNever();
+
+                b.Property(d => d.FileName).HasConversion(encryptedString).HasColumnType("text").IsRequired();
+                b.Property(d => d.Description).HasConversion(encryptedNullableString).HasColumnType("text");
+                b.Property(d => d.Content).HasConversion(encryptedBytes, byteArrayComparer).HasColumnType("bytea").IsRequired();
+
+                b.Property(d => d.ContentType).HasMaxLength(255).IsRequired();
+                b.Property(d => d.Category).HasConversion<string>();
+
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(d => d.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(d => d.FamilyId);
             });
         }
     }

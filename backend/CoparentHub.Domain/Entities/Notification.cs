@@ -9,7 +9,9 @@ namespace CoparentHub.Domain.Entities
         EventCancelled,
         EventReminder,
         ExpenseAdded,
-        NewMessage
+        NewMessage,
+        DocumentUploaded,
+        CustodyScheduleUpdated
     }
 
     public class Notification : BaseEntity

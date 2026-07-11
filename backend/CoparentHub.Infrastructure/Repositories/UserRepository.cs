@@ -201,6 +201,24 @@ namespace CoparentHub.Infrastructure.Repositories
                 .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByRecipient, true), ct);
     }
 
+    public class DocumentRepository(AppDbContext db) : IDocumentRepository
+    {
+        public Task<Document?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            db.Documents.FirstOrDefaultAsync(d => d.Id == id, ct);
+
+        public Task<List<DocumentSummary>> GetSummariesByFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            db.Documents
+                .Where(d => d.FamilyId == familyId)
+                .OrderByDescending(d => d.CreatedAt)
+                .Select(d => new DocumentSummary(
+                    d.Id, d.FamilyId, d.ChildId, d.UploadedByUserId,
+                    d.FileName, d.ContentType, d.Category, d.SizeBytes, d.Description, d.CreatedAt))
+                .ToListAsync(ct);
+
+        public void Add(Document document) => db.Documents.Add(document);
+        public void Remove(Document document) => db.Documents.Remove(document);
+    }
+
     public class UnitOfWork(
         AppDbContext db,
         IUserRepository users,
@@ -211,7 +229,8 @@ namespace CoparentHub.Infrastructure.Repositories
         IPasswordResetTokenRepository passwordResetTokens,
         IPushSubscriptionRepository pushSubscriptions,
         IExpenseRepository expenses,
-        IMessageRepository messages)
+        IMessageRepository messages,
+        IDocumentRepository documents)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -223,6 +242,7 @@ namespace CoparentHub.Infrastructure.Repositories
         public IPushSubscriptionRepository PushSubscriptions { get; } = pushSubscriptions;
         public IExpenseRepository Expenses { get; } = expenses;
         public IMessageRepository Messages { get; } = messages;
+        public IDocumentRepository Documents { get; } = documents;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
 
         // If EnableRetryOnFailure is ever added to the Npgsql context, this must switch to
