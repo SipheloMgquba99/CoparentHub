@@ -142,7 +142,8 @@ builder.Services
         {
             OnTokenValidated = async context =>
             {
-                var userIdClaim = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
                 var stampClaim = context.Principal?.FindFirstValue(JwtTokenService.SecurityStampClaimType);
 
                 if (!Guid.TryParse(userIdClaim, out var userId) || string.IsNullOrEmpty(stampClaim))
