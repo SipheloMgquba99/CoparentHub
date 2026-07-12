@@ -219,6 +219,21 @@ namespace CoparentHub.Infrastructure.Repositories
         public void Remove(Document document) => db.Documents.Remove(document);
     }
 
+    public class CustodyScheduleRepository(AppDbContext db) : ICustodyScheduleRepository
+    {
+        public Task<CustodySchedule?> GetActiveByFamilyIdAsync(Guid familyId, CancellationToken ct = default) =>
+            db.CustodySchedules.FirstOrDefaultAsync(cs => cs.FamilyId == familyId && cs.IsActive, ct);
+
+        public Task<CustodySchedule?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            db.CustodySchedules.FirstOrDefaultAsync(cs => cs.Id == id, ct);
+
+        public void Add(CustodySchedule schedule) => db.CustodySchedules.Add(schedule);
+
+        public async Task DeactivateAllForFamilyAsync(Guid familyId, CancellationToken ct = default) =>
+            await db.CustodySchedules.Where(cs => cs.FamilyId == familyId && cs.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(cs => cs.IsActive, false), ct);
+    }
+
     public class UnitOfWork(
         AppDbContext db,
         IUserRepository users,
@@ -230,7 +245,8 @@ namespace CoparentHub.Infrastructure.Repositories
         IPushSubscriptionRepository pushSubscriptions,
         IExpenseRepository expenses,
         IMessageRepository messages,
-        IDocumentRepository documents)
+        IDocumentRepository documents,
+        ICustodyScheduleRepository custodySchedules)
     : IUnitOfWork
     {
         public IUserRepository Users { get; } = users;
@@ -243,6 +259,7 @@ namespace CoparentHub.Infrastructure.Repositories
         public IExpenseRepository Expenses { get; } = expenses;
         public IMessageRepository Messages { get; } = messages;
         public IDocumentRepository Documents { get; } = documents;
+        public ICustodyScheduleRepository CustodySchedules { get; } = custodySchedules;
         public Task SaveAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
 
         // If EnableRetryOnFailure is ever added to the Npgsql context, this must switch to

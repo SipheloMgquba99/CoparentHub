@@ -23,6 +23,7 @@ interface ShellProps {
 const NAV_ITEMS = [
   { id: "home",     label: "Home",     icon: Icons.home   },
   { id: "sched",    label: "Schedule", icon: Icons.cal    },
+  { id: "custody",  label: "Custody",  icon: Icons.repeat },
   { id: "expenses", label: "Expenses", icon: Icons.wallet },
   { id: "messages", label: "Messages", icon: Icons.chat   },
   { id: "fam",      label: "Family",   icon: Icons.users  },

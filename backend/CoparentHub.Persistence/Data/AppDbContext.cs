@@ -298,6 +298,21 @@ namespace CoparentHub.Persistence.Data
 
                 b.HasIndex(d => d.FamilyId);
             });
+
+            m.Entity<CustodySchedule>(b =>
+            {
+                b.HasKey(cs => cs.Id);
+                b.Property(cs => cs.Id).ValueGeneratedNever();
+
+                b.Property(cs => cs.DayPattern).HasMaxLength(90).IsRequired();
+
+                b.HasOne<Family>()
+                    .WithMany()
+                    .HasForeignKey(cs => cs.FamilyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(cs => new { cs.FamilyId, cs.IsActive });
+            });
         }
     }
 }

@@ -151,13 +151,32 @@ you (the operator) are responsible for configuring before deploying it.
   **Not currently exposed in the frontend** — the endpoint exists and is fully functional,
   but self-service deletion is deliberately not surfaced to users yet, pending an admin
   panel that will manage account deletion instead.
-- **Cascade-enforced family deletion**: `ScheduledEvent`, `Notification`, `Expense`, and
-  `Message` all have a DB-level foreign key to `Family` with `ON DELETE CASCADE` — deleting
-  a family (via the account-deletion path above, or the existing family-delete feature)
-  is guaranteed by the database to remove every row scoped to it, rather than relying on
-  application code remembering to clean up each table individually. `FamilyMember`,
-  `Child`, `FamilyInvite`, `PasswordResetToken`, and `PushSubscription` already had this
-  same cascade behavior from earlier in the project.
+- **Cascade-enforced family deletion**: `ScheduledEvent`, `Notification`, `Expense`,
+  `Message`, `Document`, and `CustodySchedule` all have a DB-level foreign key to `Family`
+  with `ON DELETE CASCADE` — deleting a family (via the account-deletion path above, or the
+  existing family-delete feature) is guaranteed by the database to remove every row scoped
+  to it, rather than relying on application code remembering to clean up each table
+  individually. `FamilyMember`, `Child`, `FamilyInvite`, `PasswordResetToken`, and
+  `PushSubscription` already had this same cascade behavior from earlier in the project.
+
+## Document Vault
+
+- Uploaded documents (custody agreements, school reports, medical letters) are stored as
+  encrypted bytes directly in Postgres (`Document.Content`, `bytea` column), using the same
+  AES-256-GCM scheme as every other encrypted field (`IFieldEncryptor.EncryptBytes`/
+  `DecryptBytes`) — no external storage service is involved, no separate secrets to manage.
+  `FileName` and `Description` are encrypted too; `ContentType`, `Category`, and `SizeBytes`
+  are plain (not sensitive on their own).
+- **No real virus/malware scanning** — the substitute is a strict server-side allowlist
+  (PDF, JPEG, PNG, Word docs) plus a 10MB per-file cap, enforced in
+  `UploadDocumentValidator` and mirrored by `[RequestFormLimits]`/`[RequestSizeLimit]` on
+  the upload endpoint (the app's global Kestrel body-size cap is 1MB for every other
+  endpoint — this is the one deliberate exception). Real content scanning would require an
+  external service (e.g. ClamAV or a cloud AV API); flagged here as a known limitation, same
+  treatment as the key-rotation gap above, not built as part of this pass.
+- Listing documents (`GET .../documents`) never pulls file bytes — `GetSummariesByFamilyAsync`
+  projects everything except `Content`, so rendering the list doesn't transfer or decrypt
+  megabytes of blob data just to show a filename.
 
 ## Before Going to Production — Checklist
 

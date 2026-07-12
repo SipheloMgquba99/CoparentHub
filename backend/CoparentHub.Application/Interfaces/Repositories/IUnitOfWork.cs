@@ -16,6 +16,7 @@ namespace CoparentHub.Application.Interfaces.Repositories
         IExpenseRepository Expenses { get; }
         IMessageRepository Messages { get; }
         IDocumentRepository Documents { get; }
+        ICustodyScheduleRepository CustodySchedules { get; }
         Task SaveAsync(CancellationToken ct = default);
 
         // Wraps multiple Save/Execute calls in one DB transaction.

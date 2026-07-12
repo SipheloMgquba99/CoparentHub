@@ -6,4 +6,5 @@ export * from "./push";
 export * from "./expenses";
 export * from "./messages";
 export * from "./documents";
+export * from "./custody";
 export { getToken, setUnauthorizedHandler } from './http'
